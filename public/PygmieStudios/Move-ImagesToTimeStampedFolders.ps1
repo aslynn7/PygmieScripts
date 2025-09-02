@@ -57,7 +57,7 @@ function Move-ImagesToTimeStampedFolders {
                     Write-Host "$($Picture.LastWriteTime)"
                     [System.String] $DateTaken = ([DateTime]$Picture.LastWriteTime ).ToString('MM-dd-yyyy')
 
-                    $WriteToFolder = Join-Path $OutputFolder -ChildPath $DateTaken 
+                    $WriteToFolder = Join-Path $OutputFolder -ChildPath $DateTaken
 
                     if ( -not ( Test-Path $WriteToFolder ) ) {
                         New-Item -Path $WriteToFolder -ItemType Directory -Force | Out-Null

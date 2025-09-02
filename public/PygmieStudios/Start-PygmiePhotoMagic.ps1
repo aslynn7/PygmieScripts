@@ -33,11 +33,11 @@ function Start-PygmiePhotoMagic {
         [System.String] $InputFolder = $PWD,
 
         [Parameter(Mandatory = $False)]
-        [System.String] $OutputFolder = "$PWD\YeahBaby",
+        [System.String] $OutputFolder = "$PWD\Finals",
 
         [Switch] $OperateOnSubfolders,
 
-        [Switch] $DoSortToFolders,  # NOTE NOT WORKING YET
+        [Switch] $DoSortToFolders,  # For this we want to check if there are any subfolders present already, if so bail with warning
 
         [Switch] $Cleanup
     )
@@ -45,7 +45,7 @@ function Start-PygmiePhotoMagic {
     begin {
         Write-Verbose -Message "[$($MyInvocation.MyCommand.Name)] - Entering 'begin' block"
 
-        [Bool] $Result = $false
+        [Bool] $Result = $true
 
         Write-Verbose 'Calling Start-PygmiePhotoMagic() with the following parameters:'
 
@@ -64,10 +64,11 @@ function Start-PygmiePhotoMagic {
             if ( $OperateOnSubfolders ) {
                 $Subfolders = Get-ChildItem -Path $InputFolder -Directory
                 foreach ( $SubFolder in $Subfolders ) {
-                    Write-Output "Processing subfolder: $($SubFolder.FullName)"
+                    Write-Host "Processing subfolder: $($SubFolder.FullName)"
                     $SubfolderPath = Join-Path -Path $InputFolder -ChildPath $SubFolder.Name
+
                     Push-Location $SubfolderPath
-                    Start-PygmiePhotoMagic -OperateOnSubfolders:$false -Cleanup:$Cleanup -Verbose:$VerbosePreference
+                    $Result = Start-PygmiePhotoMagic -OperateOnSubfolders:$false -Cleanup:$Cleanup -Verbose:$VerbosePreference -DoSortToFolders:$DoSortToFolders
                     Pop-Location
                 }
             }
@@ -75,75 +76,69 @@ function Start-PygmiePhotoMagic {
                 $SmallerizedPath = Join-Path -Path $OutputFolder -ChildPath 'Smallerized'
                 $WatermarkedPath = Join-Path -Path $OutputFolder -ChildPath 'Watermarked'
 
-                Write-Output ''
-                try {
-                    $SmallerizedResults = Resize-SmallerizedImage -OutputFolder $SmallerizedPath -OverwriteOutputFolder -Verbose:$VerbosePreference
-                }
-                catch {
-                    throw "Error encountered while resizing images: $($_.Exception.Message)"
-                }
+                Write-Host ''
 
-                if ( $SmallerizedResults ) {
+                if ( $DoSortToFolders ) {
                     try {
-                        $WatermarkingResults = Add-CopyrightAndWatermarkToImage -InputFolder $SmallerizedPath -OutputFolder $WatermarkedPath -OverwriteOutputFolder -Verbose:$VerbosePreference
+                        $SortResults = Move-ImagesToTimeStampedFolders -Verbose:$VerbosePreference
+                        $Result = $Result -band $SortResults
                     }
                     catch {
-                        throw "Error encountered while watermarking images: $($_.Exception.Message)"
+                        throw "Error encountered while moving images to time-stamped folders: $($_.Exception.Message)"
                     }
-                
-                    $Result = $True 
 
-                    if ( $WatermarkingResults ) {
-                        if ( $DoSortToFolders ) {
+                    if ( $SortResults ) {
+                        try {
+                            $MagicResult = Start-PygmiePhotoMagic -OperateOnSubfolders:$true -Cleanup:$Cleanup -Verbose:$VerbosePreference
+                            $Result = $Result -band $MagicResult
+                        }
+                        catch {
+                            throw "Error encountered while calling Start-PygmiePhotoMagic on the sorted folders: $($_.Exception.Message)"
+                        }
+                    }
+                }
+                else {
+                    try {
+                        $SmallerizedResults = Resize-SmallerizedImage -OutputFolder $SmallerizedPath -OverwriteOutputFolder -Verbose:$VerbosePreference
+                        $Result = $Result -band $SmallerizedResults
+                    }
+                    catch {
+                        throw "Error encountered while resizing images: $($_.Exception.Message)"
+                    }
+
+                    if ( $SmallerizedResults ) {
+                        try {
+                            $WatermarkingResults = Add-CopyrightAndWatermarkToImage -InputFolder $SmallerizedPath -OutputFolder $WatermarkedPath -OverwriteOutputFolder -Verbose:$VerbosePreference
+                            $Result = $Result -band $WatermarkingResults
+                        }
+                        catch {
+                            throw "Error encountered while watermarking images: $($_.Exception.Message)"
+                        }
+
+                        Copy-Item $WatermarkedPath\* $OutputFolder | Out-Null
+
+                        if ( $Cleanup ) {
                             try {
-                                $SortResult = Move-ImagesToTimeStampedFolders -InputFolder $WatermarkedPath -Verbose:$VerbosePreference
-                                $Result = $Result -band $SortResult
-
-                                $TimeStampedFolders = Get-ChildItem -Path $WatermarkedPath -Directory
-
-                                foreach ( $Folder in $TimeStampedFolders ) {
-                                    Move-Item -Path $Folder.FullName -Destination $OutputFolder -Force
+                                if ( Test-Path $SmallerizedPath ) {
+                                    Write-Host "Cleaning up $SmallerizedPath"
+                                    Remove-Item -Path $SmallerizedPath -Recurse -Force | Out-Null
                                 }
-
-                                if ( $Cleanup ) {
-                                    Remove-Item -Path $OutputFolder\*.jpg -Recurse -Force
-                                    Remove-Item -Path $OutputFolder\*.jpeg -Recurse -Force
+                                if ( Test-Path $WatermarkedPath ) {
+                                    Write-Host "Cleaning up $WatermarkedPath"
+                                    Remove-Item -Path $WatermarkedPath -Recurse -Force | Out-Null
                                 }
                             }
                             catch {
-                                $Result = $False
-                                throw "Error encountered while moving images to time-stamped folders: $($_.Exception.Message)"
+                                Write-Host "Error encountered while cleaning up: $($_.Exception.Message)"
+                                $Result = $false
                             }
-                        }
-                        else {
-                            $Files = Get-ChildItem -Path $WatermarkedPath\* -Include *.jpg, *.jpeg
-
-                            foreach ( $File in $Files ) {
-                                Move-Item -Path $File.FullName -Destination $OutputFolder -Force
-                            }
-                        }
-                    }
-
-                    if ( $Cleanup ) {
-                        try {
-                            if ( Test-Path $SmallerizedPath ) {
-                                Write-Output "Cleaning up $SmallerizedPath"
-                                Remove-Item -Path $SmallerizedPath -Recurse -Force
-                            }
-                            if ( Test-Path $WatermarkedPath ) {
-                                Write-Output "Cleaning up $WatermarkedPath"
-                                Remove-Item -Path $WatermarkedPath -Recurse -Force
-                            }
-                        }
-                        catch {
-                            Write-Output "Error encountered while cleaning up: $($_.Exception.Message)"
-                            $Result = $false
                         }
                     }
                 }
             }
         }
         catch {
+            $Result = $False
             throw $("Error encountered in [$($MyInvocation.MyCommand.Name)] - " + $_.Exception)
         }
 

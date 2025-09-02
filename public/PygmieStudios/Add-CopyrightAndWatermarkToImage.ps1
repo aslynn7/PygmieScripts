@@ -64,7 +64,8 @@ function Add-CopyrightAndWatermarkToImage {
         [System.String] $FontName = 'Courier',
 
         [Parameter(Mandatory = $False)]
-        [System.Int16] $FontSize = .1,
+        [ValidateRange(0, 1)]
+        [decimal] $FontSizePercentage = .5,
 
         [Switch] $OverwriteOutputFolder
     )
@@ -97,11 +98,11 @@ function Add-CopyrightAndWatermarkToImage {
             }
             elseif ($OverwriteOutputFolder) {
                 Write-Verbose "Overwriting existing output folder: $OutputFolder"
-                Remove-Item $OutputFolder -Recurse -Force
+                Remove-Item $OutputFolder -Recurse -Force | Out-Null
                 New-Item -ItemType Directory -Force -Path $OutputFolder | Out-Null
             }
 
-            $Files = Get-ChildItem -Path $inputFolder\* -Include *.jpg, *.jpeg
+            $Files = Get-ChildItem -Path $inputFolder\* -File -Include *.jpg, *.jpeg
 
             $Index = 0
 
@@ -114,17 +115,41 @@ function Add-CopyrightAndWatermarkToImage {
 
                 try {
                     Write-Verbose "Adding watermark to $InputFile"
-                    
-                    # magick `
-                    #     $InputFile `
-                    #     \( -background none -fill 'rgba(255,255,255,0.3)' `
-                    #         -size '%[fx:w*0.5]x' caption:"$Watermark" \) `
-                    #     -gravity southeast `
-                    #     -geometry +10+10 `
-                    #     -composite `
-                    #     $OutputFile
+                    Write-Verbose '---------------------------------------------------'
+
+                    Write-Verbose 'Auto-orient the image so portrait/landscape rotation is correct'
+                    $OrientedFile = "$InputFolder/oriented_temp.jpg"
+                    & magick $InputFile -auto-orient $OrientedFile
+
+                    Write-Verbose 'Get oriented image width'
+                    $imgWidth = [int](& magick identify -format '%w' $OrientedFile)
+
+                    Write-Verbose 'Base font size for measurement'
+                    $baseSize = 20
+
+                    Write-Verbose 'Measure text width at base size'
+                    $textWidth = [int](& magick -debug none -font $FontName -pointsize $baseSize label:"$Watermark" -format '%w' info:)
+
+                    Write-Verbose 'Compute font size to make watermark ~30% of oriented image width'
+                    $targetWidth = $imgWidth * $FontSizePercentage
+                    $FontSize = [math]::Floor($baseSize * ($targetWidth / $textWidth))
+
+                    Write-Verbose 'Apply watermark to auto-oriented image'
+                    & magick $OrientedFile `
+                        -font $FontName `
+                        -gravity southeast `
+                        -pointsize $FontSize `
+                        -fill 'rgba(255, 255, 255, 0.29)' `
+                        -stroke 'rgba(0,0,0,0.5)' `
+                        -strokewidth 2 `
+                        -annotate +10+10 "$Watermark" `
+                        $OutputFile
+
+                    Write-Verbose 'Clean up temp file'
+                    Remove-Item $OrientedFile -Force
 
                     Write-Verbose "Adding metadata to $OutputFile"
+                    Write-Verbose '---------------------------------------------------'
                     & exiftool `
                         -overwrite_original `
                         "-Copyright=$Copyright" `
@@ -140,11 +165,10 @@ function Add-CopyrightAndWatermarkToImage {
                         $OutputFile | Out-Null
 
                     Write-Host "[$Index/$($Files.Count)] $InputFile => $OutputFile " -ForegroundColor Green
-
                 }
                 catch {
                     $Result = $False
-                    Write-Host "[$Index/$($Files.Count)] $InputFile => $OutputFile " -ForegroundColor Red
+                    Write-Host "[$Index/$($Files.Count)] $InputFile => $OutputFile - Error = $_" -ForegroundColor Red
                 }
 
                 $Result = $Result -band $True

@@ -61,12 +61,12 @@ function Resize-SmallerizedImage {
             }
             elseif ($OverwriteOutputFolder) {
                 Write-Verbose "Overwriting existing output folder: $OutputFolder"
-                Remove-Item $OutputFolder -Recurse -Force
+                Remove-Item $OutputFolder -Recurse -Force | Out-Null
                 New-Item -ItemType Directory -Force -Path $OutputFolder | Out-Null
             }
 
             $Files = Get-ChildItem -Path $InputFolder/* -Include *.jpg, *.jpeg
-            $Files
+
             $Index = 0
             Write-Host "Smallerizing $($Files.Count) files:"
 
