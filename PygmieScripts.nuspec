@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package >
+    <metadata>
+        <id>PygmieScripts</id>
+        <version>1.0.0</version>
+        <authors>aslynn.meyers</authors>
+        <owners>Green Pygmies</owners>
+        <description>Peronsal scripts I use for various things.</description>
+        <releaseNotes></releaseNotes>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <copyright>(c) 2025 Green Pygmies. All rights reserved.</copyright>
+        <tags></tags>
+        <dependencies>
+        </dependencies>
+    </metadata>
+</package>
