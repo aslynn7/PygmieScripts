@@ -56,6 +56,20 @@ function Rename-PhotoFiles {
                 $Files = Get-ChildItem -Path $InputFolder -Filter $FileType -File | Sort-Object CreationTime
 
                 foreach ( $File in $Files ) {
+                    $BaseName = [System.IO.Path]::GetFileNameWithoutExtension($File.Name)
+
+                    $RawFile = $Null
+                    $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.RAW" -File
+                    if (-not $RawFile) {
+                        $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.NEF" -File
+                    }
+
+                    if ( $RawFile ) {
+                        $NewRawName = '{0}{1:D4}{2}' -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $RawFile.Extension
+                        Write-Verbose "   '$RawFile' -> '$NewRawName'"
+                        Rename-Item -Path $RawFile.FullName -NewName $NewRawName
+                    }
+
                     $NewName = '{0}{1:D4}{2}' -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $File.Extension
 
                     $NewPath = Join-Path -Path $File.DirectoryName -ChildPath $NewName
@@ -66,7 +80,7 @@ function Rename-PhotoFiles {
 
                     Write-Host "   '$($File.Name)' -> '$NewName'"
                 }
-            }   
+            }
         }
         catch {
             $Result = $False

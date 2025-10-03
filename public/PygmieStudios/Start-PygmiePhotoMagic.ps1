@@ -21,6 +21,9 @@ function Start-PygmiePhotoMagic {
    .EXAMPLE
       C:\PS> Start-PygmiePhotoMagic -DoSortToFolders -Cleanup
 
+   .EXAMPLE
+      C:\PS> Start-PygmiePhotoMagic -DoSortToFolders -Cleanup -RenameFiles -MoveRawFiles
+
    .NOTES
       This function calls functions that only work on MacOS.  Requires installation of ImageMagick and ExifTool.
       Ensure that the they're both in your PATH.
@@ -35,11 +38,18 @@ function Start-PygmiePhotoMagic {
         [Parameter(Mandatory = $False)]
         [System.String] $OutputFolder = "$PWD\Finals",
 
+        [Parameter(Mandatory = $False)]
+        [System.String] $FilenamePrefix = 'Photo-',
+
         [Switch] $OperateOnSubfolders,
 
         [Switch] $DoSortToFolders,  # For this we want to check if there are any subfolders present already, if so bail with warning
 
-        [Switch] $Cleanup
+        [Switch] $Cleanup,
+
+        [Switch] $RenameFiles,
+
+        [Switch] $MoveRawFiles
     )
 
     begin {
@@ -98,6 +108,28 @@ function Start-PygmiePhotoMagic {
                     }
                 }
                 else {
+                    if ( $RenameFiles ) {
+                        Write-Host "Renaming files in $InputFolder with prefix $FilenamePrefix"
+                        Rename-PhotoFiles -InputFolder $InputFolder -FilenamePrefix $FilenamePrefix -Verbose:$VerbosePreference
+                    }
+                    else {
+                        Write-Host "Not renaming files in $InputFolder"
+                    }
+
+                    if ( $MoveRawFiles ) {
+                        Write-Host "Moving RAW files in $InputFolder to $InputFolder\RAW"
+                        $RawFolder = Join-Path -Path $InputFolder -ChildPath 'RAW'
+                        if (-not (Test-Path $RawFolder)) {
+                            New-Item -Path $RawFolder -ItemType Directory | Out-Null
+                        }
+                        Get-ChildItem -Path $InputFolder -Filter *.NEF -File | ForEach-Object {
+                            Move-Item -Path $_.FullName -Destination $RawFolder
+                        }
+                        Get-ChildItem -Path $InputFolder -Filter *.RAW -File | ForEach-Object {
+                            Move-Item -Path $_.FullName -Destination $RawFolder
+                        }
+                    }
+
                     try {
                         $SmallerizedResults = Resize-SmallerizedImage -OutputFolder $SmallerizedPath -OverwriteOutputFolder -Verbose:$VerbosePreference
                         $Result = $Result -band $SmallerizedResults
