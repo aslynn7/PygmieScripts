@@ -40,7 +40,7 @@ function Add-CopyrightAndWatermarkToImage {
         [System.String] $InputFolder = $PWD,
 
         [Parameter(Mandatory = $False)]
-        [System.String] $OutputFolder = "$PWD/Watermarked",
+        [System.String] $OutputFolder = $Null,
 
         [Parameter(Mandatory = $False)]
         [System.String] $Watermark = "Copyright 2025 (c) Pygmie Studios`nAll Rights Reserved",
@@ -76,6 +76,10 @@ function Add-CopyrightAndWatermarkToImage {
         [Bool] $Result = $True
 
         Write-Verbose 'Calling Add-CopyrightAndWatermarkToImage() with the following parameters:'
+
+        if ( -not $OutputFolder ) {
+            $OutputFolder = Join-Path -Path $PWD -ChildPath 'Watermarked'
+        }
 
         Write-Verbose "   InputFolder  = $InputFolder"
         Write-Verbose "   OutputFolder = $OutputFolder"

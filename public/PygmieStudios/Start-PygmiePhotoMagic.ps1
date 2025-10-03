@@ -8,21 +8,36 @@ function Start-PygmiePhotoMagic {
 
    .INPUTS
         [System.String] $InputFolder = Folder where the input .jpg/.jpeg files are located.
+        [System.String] $OutputFolder = Folder where the final output .jpg/.jpeg files are to be placed.
+        [System.String] $FilenamePrefix = Prefix to use when renaming files.
+        [System.String] $RawFolder = Folder where the RAW files are to be placed.
+        [Switch] $OperateOnSubfolders = If set, will operate on subfolders of the InputFolder.
+        [Switch] $DoSortToFolders = If set, will sort images into time-stamped folders.
+        [Switch] $Cleanup = If set, will clean up intermediate folders.
+        [Switch] $RenameFiles = If set, will rename files with the specified prefix.
+        [Switch] $MoveRawFiles = If set, will move RAW files to the specified RawFolder.
+        [Switch] $SmallerizeAndWatermark = If set, will smallerize and watermark images.
 
    .OUTPUTS
       [Bool] = $True on success (or lack of exceptions), $False on failure.
 
    .EXAMPLE
-      C:\PS> Start-PygmiePhotoMagic
+      Start-PygmiePhotoMagic
 
    .EXAMPLE
-      C:\PS> Start-PygmiePhotoMagic -Cleanup
+      Start-PygmiePhotoMagic -Cleanup
 
    .EXAMPLE
-      C:\PS> Start-PygmiePhotoMagic -DoSortToFolders -Cleanup
+      Start-PygmiePhotoMagic -DoSortToFolders -Cleanup
 
    .EXAMPLE
-      C:\PS> Start-PygmiePhotoMagic -DoSortToFolders -Cleanup -RenameFiles -MoveRawFiles
+      Start-PygmiePhotoMagic -DoSortToFolders -Cleanup -RenameFiles -MoveRawFiles
+
+   .EXAMPLE
+      Start-PygmiePhotoMagic -DoSortToFolders -Cleanup -RenameFiles -MoveRawFiles -SmallerizeAndWatermark
+
+   .EXAMPLE
+      Start-PygmiePhotoMagic -InputFolder 'C:\Photos\ToProcess' -OutputFolder 'C:\Photos\Finals' -RawFolder 'C:\Photos\RAW' -DoSortToFolders -Cleanup -RenameFiles -MoveRawFiles -SmallerizeAndWatermark
 
    .NOTES
       This function calls functions that only work on MacOS.  Requires installation of ImageMagick and ExifTool.
@@ -36,20 +51,25 @@ function Start-PygmiePhotoMagic {
         [System.String] $InputFolder = $PWD,
 
         [Parameter(Mandatory = $False)]
-        [System.String] $OutputFolder = "$PWD\Finals",
+        [System.String] $OutputFolder = $Null,
 
         [Parameter(Mandatory = $False)]
         [System.String] $FilenamePrefix = 'Photo-',
 
+        [Parameter(Mandatory = $False)]
+        [System.String] $RawFolder = $Null,
+
         [Switch] $OperateOnSubfolders,
 
-        [Switch] $DoSortToFolders,  # For this we want to check if there are any subfolders present already, if so bail with warning
+        [Switch] $DoSortToFolders,
 
         [Switch] $Cleanup,
 
         [Switch] $RenameFiles,
 
-        [Switch] $MoveRawFiles
+        [Switch] $MoveRawFiles,
+
+        [Switch] $SmallerizeAndWatermark
     )
 
     begin {
@@ -58,6 +78,14 @@ function Start-PygmiePhotoMagic {
         [Bool] $Result = $true
 
         Write-Verbose 'Calling Start-PygmiePhotoMagic() with the following parameters:'
+
+        if ( -not $OutputFolder ) {
+            $OutputFolder = Join-Path -Path $PWD -ChildPath 'Finals'
+        }
+
+        if ( -not $RawFolder ) {
+            $RawFolder = Join-Path -Path $PWD -ChildPath 'RAW'
+        }
 
         Write-Verbose "   InputFolder  = $InputFolder"
         Write-Verbose "   OutputFolder  = $OutputFolder"
@@ -78,7 +106,7 @@ function Start-PygmiePhotoMagic {
                     $SubfolderPath = Join-Path -Path $InputFolder -ChildPath $SubFolder.Name
 
                     Push-Location $SubfolderPath
-                    $Result = Start-PygmiePhotoMagic -OperateOnSubfolders:$false -Cleanup:$Cleanup -Verbose:$VerbosePreference -DoSortToFolders:$DoSortToFolders
+                    $Result = Start-PygmiePhotoMagic -OperateOnSubfolders:$false -Cleanup:$Cleanup -Verbose:$VerbosePreference -DoSortToFolders:$DoSortToFolders -RenameFiles:$RenameFiles -MoveRawFiles:$MoveRawFiles
                     Pop-Location
                 }
             }
@@ -112,57 +140,63 @@ function Start-PygmiePhotoMagic {
                         Write-Host "Renaming files in $InputFolder with prefix $FilenamePrefix"
                         Rename-PhotoFiles -InputFolder $InputFolder -FilenamePrefix $FilenamePrefix -Verbose:$VerbosePreference
                     }
-                    else {
-                        Write-Host "Not renaming files in $InputFolder"
-                    }
 
                     if ( $MoveRawFiles ) {
-                        Write-Host "Moving RAW files in $InputFolder to $InputFolder\RAW"
-                        $RawFolder = Join-Path -Path $InputFolder -ChildPath 'RAW'
+                        Write-Host "Moving RAW files in $InputFolder to $InputFolder/RAW"
                         if (-not (Test-Path $RawFolder)) {
                             New-Item -Path $RawFolder -ItemType Directory | Out-Null
                         }
-                        Get-ChildItem -Path $InputFolder -Filter *.NEF -File | ForEach-Object {
-                            Move-Item -Path $_.FullName -Destination $RawFolder
-                        }
-                        Get-ChildItem -Path $InputFolder -Filter *.RAW -File | ForEach-Object {
-                            Move-Item -Path $_.FullName -Destination $RawFolder
+
+                        foreach ( $FileType in $Global:RawFileTypes ) {
+                            Write-Verbose "Processing file type: $FileType"
+                            Get-ChildItem -Path $InputFolder -Filter $FileType -File | ForEach-Object {
+                                Move-Item -Path $_.FullName -Destination $RawFolder
+                            }
                         }
                     }
 
-                    try {
-                        $SmallerizedResults = Resize-SmallerizedImage -OutputFolder $SmallerizedPath -OverwriteOutputFolder -Verbose:$VerbosePreference
-                        $Result = $Result -band $SmallerizedResults
-                    }
-                    catch {
-                        throw "Error encountered while resizing images: $($_.Exception.Message)"
+                    if ( $CleanupExtraneousRAWFiles ) {
+                        Write-Host "Cleaning up extraneous RAW files in $InputFolder"
+                        Cleanup-ExtraneousRAWFiles -InputFolder $InputFolder $RawFolder -Verbose:$VerbosePreference
                     }
 
-                    if ( $SmallerizedResults ) {
+                    if ( $SmallerizeAndWatermark ) {
+                        Read-Host 'Most of the magic has occurred and your RAW files have been sorted and cleaned up.  Press Enter to continue with smallerizing and watermarking images, or Ctrl-C to bail.'
+
                         try {
-                            $WatermarkingResults = Add-CopyrightAndWatermarkToImage -InputFolder $SmallerizedPath -OutputFolder $WatermarkedPath -OverwriteOutputFolder -Verbose:$VerbosePreference
-                            $Result = $Result -band $WatermarkingResults
+                            $SmallerizedResults = Resize-SmallerizedImage -OutputFolder $SmallerizedPath -OverwriteOutputFolder -Verbose:$VerbosePreference
+                            $Result = $Result -band $SmallerizedResults
                         }
                         catch {
-                            throw "Error encountered while watermarking images: $($_.Exception.Message)"
+                            throw "Error encountered while resizing images: $($_.Exception.Message)"
                         }
 
-                        Copy-Item $WatermarkedPath\* $OutputFolder | Out-Null
-
-                        if ( $Cleanup ) {
+                        if ( $SmallerizedResults ) {
                             try {
-                                if ( Test-Path $SmallerizedPath ) {
-                                    Write-Host "Cleaning up $SmallerizedPath"
-                                    Remove-Item -Path $SmallerizedPath -Recurse -Force | Out-Null
-                                }
-                                if ( Test-Path $WatermarkedPath ) {
-                                    Write-Host "Cleaning up $WatermarkedPath"
-                                    Remove-Item -Path $WatermarkedPath -Recurse -Force | Out-Null
-                                }
+                                $WatermarkingResults = Add-CopyrightAndWatermarkToImage -InputFolder $SmallerizedPath -OutputFolder $WatermarkedPath -OverwriteOutputFolder -Verbose:$VerbosePreference
+                                $Result = $Result -band $WatermarkingResults
                             }
                             catch {
-                                Write-Host "Error encountered while cleaning up: $($_.Exception.Message)"
-                                $Result = $false
+                                throw "Error encountered while watermarking images: $($_.Exception.Message)"
+                            }
+
+                            Copy-Item $WatermarkedPath\* $OutputFolder | Out-Null
+
+                            if ( $Cleanup ) {
+                                try {
+                                    if ( Test-Path $SmallerizedPath ) {
+                                        Write-Host "Cleaning up $SmallerizedPath"
+                                        Remove-Item -Path $SmallerizedPath -Recurse -Force | Out-Null
+                                    }
+                                    if ( Test-Path $WatermarkedPath ) {
+                                        Write-Host "Cleaning up $WatermarkedPath"
+                                        Remove-Item -Path $WatermarkedPath -Recurse -Force | Out-Null
+                                    }
+                                }
+                                catch {
+                                    Write-Host "Error encountered while cleaning up: $($_.Exception.Message)"
+                                    $Result = $false
+                                }
                             }
                         }
                     }

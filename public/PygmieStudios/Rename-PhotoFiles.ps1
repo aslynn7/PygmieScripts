@@ -39,8 +39,6 @@ function Rename-PhotoFiles {
         Write-Verbose "   InputFolder  = $InputFolder"
         Write-Verobse "   FilenamePrefix = $FilenamePrefix"
 
-        $PhotoFileTypes = @('*.jpg', '*.jpeg', '*.png', '*.tiff', '*.bmp', '*.gif')
-
         Write-Verbose -Message "[$($MyInvocation.MyCommand.Name)] - Exiting 'begin' block"
     }
 
@@ -50,7 +48,7 @@ function Rename-PhotoFiles {
         try {
             if ( -not (Test-Path $InputFolder) ) { throw "$InputFolder does not exist, bailing!" }
 
-            foreach ( $FileType in $PhotoFileTypes ) {
+            foreach ( $FileType in $Global:LossyFileTypes ) {
                 Write-Verbose "Processing file type: $FileType"
 
                 $Files = Get-ChildItem -Path $InputFolder -Filter $FileType -File | Sort-Object CreationTime

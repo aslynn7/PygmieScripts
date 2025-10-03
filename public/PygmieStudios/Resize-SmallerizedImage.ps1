@@ -30,7 +30,7 @@ function Resize-SmallerizedImage {
         [System.String] $InputFolder = $PWD,
 
         [Parameter(Mandatory = $False)]
-        [System.String] $OutputFolder = "$PWD/Smallerized",
+        [System.String] $OutputFolder = $Null,
 
         [Parameter(Mandatory = $False)]
         [System.Int16] $MaxSizeKB = 2000,
@@ -44,6 +44,10 @@ function Resize-SmallerizedImage {
         [Bool] $Result = $True
 
         Write-Verbose 'Calling Resize-SmallerizedImage() with the following parameters:'
+
+        if ( -not $OutputFolder ) {
+            $OutputFolder = Join-Path -Path $PWD -ChildPath 'Smallerized'
+        }
 
         Write-Verbose "   InputFolder  = $InputFolder"
         Write-Verbose "   OutputFolder = $OutputFolder"
