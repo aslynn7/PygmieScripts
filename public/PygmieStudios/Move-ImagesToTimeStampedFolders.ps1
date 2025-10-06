@@ -13,17 +13,14 @@ function Move-ImagesToTimeStampedFolders {
       [Bool] = $True on success (or lack of exceptions), $False on failure.
 
    .EXAMPLE
-      C:\PS> Move-ImagesToTimeStampedFolders
+      Move-ImagesToTimeStampedFolders
 #>
     [CmdletBinding()]
     [OutputType([Bool])]
 
     param(
         [Parameter(Mandatory = $False)]
-        [System.String] $InputFolder = $PWD,
-
-        [Parameter(Mandatory = $False)]
-        [System.String] $OutputFolder = $PWD
+        [System.String] $InputFolder = $PWD
     )
 
     begin {
@@ -31,10 +28,9 @@ function Move-ImagesToTimeStampedFolders {
 
         [Bool] $Result = $True
 
-        Write-Verbose 'Calling ConvertTo-WatermarkedImage() with the following parameters:'
+        Write-Verbose 'Calling Move-ImagesToTimeStampedFolders() with the following parameters:'
 
         Write-Verbose "   InputFolder  = $InputFolder"
-        Write-Verbose "   OutputFolder = $OutputFolder"
 
         Write-Verbose -Message "[$($MyInvocation.MyCommand.Name)] - Exiting 'begin' block"
     }
@@ -43,36 +39,42 @@ function Move-ImagesToTimeStampedFolders {
         Write-Verbose -Message "[$($MyInvocation.MyCommand.Name)] - Entering 'process' block"
 
         try {
-            Push-Location $InputFolder
+            $Patterns = $Global:LossyFileTypes + $Global:RawFileTypes
 
-            $Pictures = Get-Item ./*.jpg, *.jpeg, *.raw, *.nef
+            $Pictures = foreach ( $Pattern in $Patterns ) {
+                Get-ChildItem -Path $InputFolder -Filter $Pattern -File -ErrorAction SilentlyContinue
+            }
 
             $Index = 0
 
-            Write-Host "Sorting $($Pictures.Count) images into date based subfolders:" -ForegroundColor White
-            foreach ( $Picture in $Pictures ) {
-                $Index++
+            if ( -not $Pictures ) {
+                Write-Warning "No pictures found in $InputFolder"
+            }
+            else {
+                Write-Host ''
+                Write-Host "Sorting $($Pictures.Count) images into date based subfolders:" -ForegroundColor Cyan
 
-                try {
-                    Write-Host "$($Picture.LastWriteTime)"
-                    [System.String] $DateTaken = ([DateTime]$Picture.LastWriteTime ).ToString('MM-dd-yyyy')
+                foreach ( $Picture in $Pictures ) {
+                    $Index++
 
-                    $WriteToFolder = Join-Path $OutputFolder -ChildPath $DateTaken
+                    try {
+                        [System.String] $DateTaken = ([DateTime]$Picture.LastWriteTime ).ToString('MM-dd-yyyy')
 
-                    if ( -not ( Test-Path $WriteToFolder ) ) {
-                        New-Item -Path $WriteToFolder -ItemType Directory -Force | Out-Null
+                        $WriteToFolder = Join-Path $InputFolder -ChildPath $DateTaken
+
+                        if ( -not ( Test-Path $WriteToFolder ) ) {
+                            New-Item -Path $WriteToFolder -ItemType Directory -Force | Out-Null
+                        }
+
+                        Move-Item -Path $Picture.FullName -Destination $WriteToFolder -Force
+                        Write-Host "[$Index/$($Pictures.Count)] Moving $($Picture.FullName) -> $($InputFolder)/$DateTaken" -ForegroundColor Green
                     }
-
-                    Move-Item -Path $Picture.FullName -Destination $WriteToFolder -Force
-                    Write-Host "[$Index/$($Pictures.Count)] $($Picture.FullName) -> $($OutputFolder)/$DateTaken" -ForegroundColor Green
-                }
-                catch {
-                    $Result = $False
-                    Write-Host "[$Index/$($Pictures.Count)] $($Picture.FullName) -> $($OutputFolder)/$DateTaken" -ForegroundColor Red
+                    catch {
+                        $Result = $False
+                        Write-Host "[$Index/$($Pictures.Count)] Failed Move $($Picture.FullName) -> $($InputFolder)/$DateTaken" -ForegroundColor Red
+                    }
                 }
             }
-
-            Pop-Location
 
             $Result = $Result -band $true
         }

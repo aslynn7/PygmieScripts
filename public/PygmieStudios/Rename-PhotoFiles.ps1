@@ -37,7 +37,7 @@ function Rename-PhotoFiles {
         Write-Verbose 'Calling Rename-PhotoFiles() with the following parameters:'
 
         Write-Verbose "   InputFolder  = $InputFolder"
-        Write-Verobse "   FilenamePrefix = $FilenamePrefix"
+        Write-Verbose "   FilenamePrefix = $FilenamePrefix"
 
         Write-Verbose -Message "[$($MyInvocation.MyCommand.Name)] - Exiting 'begin' block"
     }
@@ -48,37 +48,41 @@ function Rename-PhotoFiles {
         try {
             if ( -not (Test-Path $InputFolder) ) { throw "$InputFolder does not exist, bailing!" }
 
+            $FileTypeIndex = 0
             foreach ( $FileType in $Global:LossyFileTypes ) {
+                $FileTypeIndex++
+
                 Write-Verbose "Processing file type: $FileType"
 
-                $Files = Get-ChildItem -Path $InputFolder -Filter $FileType -File | Sort-Object CreationTime
+                $Files = Get-ChildItem -Path $InputFolder -Filter $FileType -File | Sort-Object LastWriteTime
 
+                $FileIndex = 0
                 foreach ( $File in $Files ) {
+                    $FileIndex++
                     $BaseName = [System.IO.Path]::GetFileNameWithoutExtension($File.Name)
+                    $NewName = '{0}{1:D4}{2}' -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $File.Extension
 
-                    $RawFile = $Null
+                    Rename-Item -Path $File.FullName -NewName $NewName
+                    Write-Host "[$FileTypeIndex][$FileIndex] Renaming $($File.Name) -> $NewName" -ForegroundColor Green
+
                     $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.RAW" -File
-                    if (-not $RawFile) {
+                    if ( -not $RawFile ) {
                         $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.NEF" -File
+                    }
+                    if ( -not $RawFile ) {
+                        $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.PNG" -File
                     }
 
                     if ( $RawFile ) {
                         $NewRawName = '{0}{1:D4}{2}' -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $RawFile.Extension
-                        Write-Verbose "   '$RawFile' -> '$NewRawName'"
+                        
                         Rename-Item -Path $RawFile.FullName -NewName $NewRawName
+                        Write-Host "[$FileTypeIndex][$FileIndex] $RawFile -> $NewRawName" -ForegroundColor Green
                     }
-
-                    $NewName = '{0}{1:D4}{2}' -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $File.Extension
-
-                    $NewPath = Join-Path -Path $File.DirectoryName -ChildPath $NewName
-
-                    Write-Verbose "Renaming file to: $NewPath"
-
-                    Rename-Item -Path $File.FullName -NewName $NewName
-
-                    Write-Host "   '$($File.Name)' -> '$NewName'"
                 }
             }
+
+            $Result = $True
         }
         catch {
             $Result = $False

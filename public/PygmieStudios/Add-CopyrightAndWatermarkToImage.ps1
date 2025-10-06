@@ -75,7 +75,8 @@ function Add-CopyrightAndWatermarkToImage {
 
         [Bool] $Result = $True
 
-        Write-Verbose 'Calling Add-CopyrightAndWatermarkToImage() with the following parameters:'
+        Write-Host ''
+        Write-Host 'Calling Add-CopyrightAndWatermarkToImage() with the following parameters:' -ForegroundColor Cyan
 
         if ( -not $OutputFolder ) {
             $OutputFolder = Join-Path -Path $PWD -ChildPath 'Watermarked'

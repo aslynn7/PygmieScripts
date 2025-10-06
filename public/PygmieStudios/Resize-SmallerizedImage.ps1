@@ -30,9 +30,6 @@ function Resize-SmallerizedImage {
         [System.String] $InputFolder = $PWD,
 
         [Parameter(Mandatory = $False)]
-        [System.String] $OutputFolder = $Null,
-
-        [Parameter(Mandatory = $False)]
         [System.Int16] $MaxSizeKB = 2000,
 
         [Switch] $OverwriteOutputFolder
@@ -45,9 +42,7 @@ function Resize-SmallerizedImage {
 
         Write-Verbose 'Calling Resize-SmallerizedImage() with the following parameters:'
 
-        if ( -not $OutputFolder ) {
-            $OutputFolder = Join-Path -Path $PWD -ChildPath 'Smallerized'
-        }
+        $OutputFolder = Join-Path -Path $InputFolder -ChildPath 'Smallerized'
 
         Write-Verbose "   InputFolder  = $InputFolder"
         Write-Verbose "   OutputFolder = $OutputFolder"
@@ -72,7 +67,8 @@ function Resize-SmallerizedImage {
             $Files = Get-ChildItem -Path $InputFolder/* -Include *.jpg, *.jpeg
 
             $Index = 0
-            Write-Host "Smallerizing $($Files.Count) files:"
+            
+            Write-Host "Smallerizing $($Files.Count) files:" -ForegroundColor Cyan
 
             foreach ( $File in $Files ) {
                 $Index++
@@ -87,7 +83,7 @@ function Resize-SmallerizedImage {
                 }
             }
 
-            $Result = $Result -band $true
+            $Result = $true
         }
         catch {
             throw $("Error encountered in [$($MyInvocation.MyCommand.Name)] - " + $_.Exception)
