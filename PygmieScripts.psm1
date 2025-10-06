@@ -29,3 +29,5 @@ catch {
 
 $Global:LossyFileTypes = @('*.jpg', '*.jpeg' )
 $Global:RawFileTypes = @('*.png', '*.raw', '*.nef')
+
+$Global:ProcessSubfolders = $true
