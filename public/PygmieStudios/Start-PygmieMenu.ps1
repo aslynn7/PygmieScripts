@@ -3,7 +3,7 @@ function Show-PygmieMenu {
     Write-Host '===================================' -ForegroundColor White
     Write-Host '        Pygmie Studios Menu       ' -ForegroundColor White
     if ( $Global:ProcessSubfolders ) {
-        Write-Host '          (Subfolder Mode)          ' -ForegroundColor Gredd
+        Write-Host '          (Subfolder Mode)          ' -ForegroundColor Green
     }
     else {
         Write-Host '        (Non Subfolder Mode)          ' -ForegroundColor Red

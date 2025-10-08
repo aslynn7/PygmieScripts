@@ -26,7 +26,9 @@ function Rename-PhotoFiles {
         [System.String] $InputFolder = $PWD,
 
         [Parameter(Mandatory = $False)]
-        [System.String] $FilenamePrefix = 'Photo-'
+        [System.String] $FilenamePrefix = $Null,
+
+        [Switch] $SkipFolderNamePrefixing
     )
 
     begin {
@@ -35,6 +37,21 @@ function Rename-PhotoFiles {
         [Bool] $Result = $true
 
         Write-Verbose 'Calling Rename-PhotoFiles() with the following parameters:'
+
+        if ( $SkipFolderNamePrefixing ) {
+            if ( [System.String]::IsNullOrEmpty( $FilenamePrefix ) ) {
+                $FilenamePrefix = 'Photo-'
+            }
+        }
+        else {
+            $FolderName = ( Split-Path -Path $InputFolder -Leaf )
+            if ( [System.String]::IsNullOrEmpty( $FilenamePrefix ) ) {
+                $FilenamePrefix = "$FolderName-Photo-"
+            }
+            else {
+                $FilenamePrefix = "$FolderName-$FilenamePrefix"
+            }
+        }
 
         Write-Verbose "   InputFolder  = $InputFolder"
         Write-Verbose "   FilenamePrefix = $FilenamePrefix"
@@ -75,7 +92,7 @@ function Rename-PhotoFiles {
 
                     if ( $RawFile ) {
                         $NewRawName = '{0}{1:D4}{2}' -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $RawFile.Extension
-                        
+
                         Rename-Item -Path $RawFile.FullName -NewName $NewRawName
                         Write-Host "[$FileTypeIndex][$FileIndex] $RawFile -> $NewRawName" -ForegroundColor Green
                     }
