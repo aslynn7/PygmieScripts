@@ -8,6 +8,7 @@ function Show-PygmieMenu {
     else {
         Write-Host '        (Non Subfolder Mode)          ' -ForegroundColor Red
     }
+    Write-Host " PWD = $PWD" -ForegroundColor Cyan
     Write-Host '===================================' -ForegroundColor White
     Write-Host '1. Move images into date/time stamped folders' -ForegroundColor White
     Write-Host '2. Rename Files' -ForegroundColor White
