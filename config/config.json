@@ -2,5 +2,22 @@
   "GeneralInfo": {
     "ModuleName": "PygmieScripts"
   },
-  "Settings": {}
+  "Settings": {},
+  "Attribution": {
+    "Pygmie Studios": {
+      "Copyright": "Copyright © {YEAR} Pygmie Studios. All rights reserved.",
+      "Trademark": "Pygmie Studios™ is a registered trademark.",
+      "Watermark": "Copyright © {YEAR} Pygmie Studios.`nAll rights reserved."
+    },
+    "Phays Photos": {
+      "Copyright": "Copyright © {YEAR} Phay's Photos.",
+      "Trademark": "Phay's Photos™ is a registered trademark.",
+      "Watermark": "Copyright © {YEAR} Phay's Photos.`nAll rights reserved."
+    },
+    "The Green Pygmies": {
+      "Copyright": "Copyright © {YEAR} The Green Pygmies.",
+      "Trademark": "The Green Pygmies™ is a registered trademark.",
+      "Watermark": "Copyright © {YEAR} The Green Pygmies.`nAll rights reserved."
+    }
+  }
 }

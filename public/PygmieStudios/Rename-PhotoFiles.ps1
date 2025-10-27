@@ -28,7 +28,9 @@ function Rename-PhotoFiles {
         [Parameter(Mandatory = $False)]
         [System.String] $FilenamePrefix = $Null,
 
-        [Switch] $SkipFolderNamePrefixing
+        [Switch] $SkipFolderNamePrefixing,
+
+        [Switch] $PhaysPhotos
     )
 
     begin {
@@ -65,8 +67,10 @@ function Rename-PhotoFiles {
         try {
             if ( -not (Test-Path $InputFolder) ) { throw "$InputFolder does not exist, bailing!" }
 
+            $AllFileTypes = $Global:LossyFileTypes + $Global:RawFileTypes
+
             $FileTypeIndex = 0
-            foreach ( $FileType in $Global:LossyFileTypes ) {
+            foreach ( $FileType in $AllFileTypes ) {
                 $FileTypeIndex++
 
                 Write-Verbose "Processing file type: $FileType"
@@ -77,10 +81,12 @@ function Rename-PhotoFiles {
                 foreach ( $File in $Files ) {
                     $FileIndex++
                     $BaseName = [System.IO.Path]::GetFileNameWithoutExtension($File.Name)
-                    $NewName = '{0}{1:D4}{2}' -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $File.Extension
+                    #$NewName = '{0}{1:D4}{2}' -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $File.Extension
+                    $Digits = [Math]::Max( [Math]::Ceiling( [Math]::Log10( [Math]::Max($Files.Count, 1) + 1 ) ), 1 )
+                    $NewName = ("{0}{1:D$Digits}{2}" -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $File.Extension)
 
                     Rename-Item -Path $File.FullName -NewName $NewName
-                    Write-Host "[$FileTypeIndex][$FileIndex] Renaming $($File.Name) -> $NewName" -ForegroundColor Green
+                    Write-Host "[$FileTypeIndex][$FileIndex/$($Files.Count)] Renaming $($File.Name) -> $NewName" -ForegroundColor Green
 
                     $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.RAW" -File
                     if ( -not $RawFile ) {
@@ -91,7 +97,8 @@ function Rename-PhotoFiles {
                     }
 
                     if ( $RawFile ) {
-                        $NewRawName = '{0}{1:D4}{2}' -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $RawFile.Extension
+                        # $NewRawName = '{0}{1:D4}{2}' -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $RawFile.Extension
+                        $NewRawName = ("{0}{1:D$Digits}{2}" -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $RawFile.Extension)
 
                         Rename-Item -Path $RawFile.FullName -NewName $NewRawName
                         Write-Host "[$FileTypeIndex][$FileIndex] $RawFile -> $NewRawName" -ForegroundColor Green

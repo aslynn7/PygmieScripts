@@ -191,6 +191,9 @@ function Start-PygmiePhotoMagic {
                         }
                     }
 
+                    Write-Host ''
+                    $DoIt = Read-Host "Most of the magic has occurred.  `nPress Enter to continue or anything else to bail."
+
                     if ( $CleanupExtraneousRAWFiles ) {
                         Write-Host ''
                         Write-Host "Cleaning up extraneous RAW files in $InputFolder" -ForegroundColor Cyan
@@ -198,9 +201,6 @@ function Start-PygmiePhotoMagic {
                     }
 
                     if ( $SmallerizeAndWatermark ) {
-                        Write-Host ''
-                        $DoIt = Read-Host "Most of the magic has occurred and your RAW files have been sorted and cleaned up.  `nPress Enter to continue or anything else to bail."
-
                         if ( [System.String]::IsNullOrEmpty($DoIt) ) {
                             try {
                                 $SmallerizedResults = Resize-SmallerizedImage -OutputFolder $SmallerizedPath -OverwriteOutputFolder -Verbose:$VerbosePreference

@@ -43,7 +43,13 @@ function Start-PygmieMenu {
                     }
                 }
                 else {
-                    Rename-PhotoFiles -InputFolder $PWD -FilenamePrefix $FilenamePrefix
+                    $SkipFolderNamePrefixing = Read-Host 'Skip folder name prefixing? (Y/N)'
+                    if ( $SkipFolderNamePrefixing -eq 'Y' -or $SkipFolderNamePrefixing -eq 'y' ) {
+                        Rename-PhotoFiles -InputFolder $PWD -FilenamePrefix $FilenamePrefix -SkipFolderNamePrefixing
+                    }
+                    else {
+                        Rename-PhotoFiles -InputFolder $PWD -FilenamePrefix $FilenamePrefix
+                    }
                 }
             }
             '3' {
@@ -72,22 +78,54 @@ function Start-PygmieMenu {
             }
             '5' {
                 # Resize, Copyright, and Watermark Files
-                if ( $Global:ProcessSubfolders ) {
-                    $SubDirectories = Get-ChildItem -Directory
-                    foreach ( $Dir in $SubDirectories.FullName ) {
-                        Resize-SmallerizedImage -InputFolder $Dir -OverwriteOutputFolder
 
-                        $SmallerizedFolder = Join-Path -Path $Dir -ChildPath 'Smallerized'
-                        $WaterMarkedAndCopyrightedFolder = Join-Path -Path $Dir -ChildPath 'WatermarkedAndCopyrighted'
-                        Add-CopyrightAndWatermarkToImage -InputFolder $SmallerizedFolder -OutputFolder $WaterMarkedAndCopyrightedFolder
+                Write-Host ''
+                Write-Host 'Pick your Copyright and Watermark option'
+                Write-Host ''
+                $PossibilityCount = $Global:PygmieScriptsConfig.Attribution.psObject.Properties.Name.Count
+                do {
+                    $Index = 0
+                    foreach ($Possibility in $Global:PygmieScriptsConfig.Attribution.psObject.Properties.Name) {
+                        $Index++
+                        Write-Host "$($Index): $Possibility"
                     }
-                }
-                else {
-                    Resize-SmallerizedImage -InputFolder $PWD -OverwriteOutputFolder
+                    Write-Host ''
+                    $Option = Read-Host 'Choose your destiny (Q to quit)'
+                } while ( (-not [int]::TryParse($Option, [ref]$null) -or [int]$Option -lt 1 -or [int]$Option -gt $PossibilityCount) -and $Option -ne 'Q') 
 
-                    $SmallerizedFolder = Join-Path -Path $PWD -ChildPath 'Smallerized'
-                    $WaterMarkedAndCopyrightedFolder = Join-Path -Path $PWD -ChildPath 'WatermarkedAndCopyrighted'
-                    Add-CopyrightAndWatermarkToImage -InputFolder $SmallerizedFolder -OutputFolder $WaterMarkedAndCopyrightedFolder
+                # Use a switch here to determine what the Watermark, Copyright, and Trademark should be set to:
+
+                if ( $Option -ne 'Q') {
+                    $Option = $Global:PygmieScriptsConfig.Attribution.psObject.Properties.Name[$Option - 1]
+                    $Copyright = ($Global:PygmieScriptsConfig.Attribution.$Option.Copyright).Replace( '{YEAR}', (Get-Date).Year )
+                    $Trademark = ($Global:PygmieScriptsConfig.Attribution.$Option.Trademark).Replace( '{YEAR}', (Get-Date).Year )
+                    $Watermark = ($Global:PygmieScriptsConfig.Attribution.$Option.Watermark).Replace( '{YEAR}', (Get-Date).Year )
+
+                    Write-Host ''
+                    Write-Host "Setting Copyright to: $Copyright"
+                    Write-Host "Setting Trademark to: $Trademark"
+                    Write-Host "Setting Watermark to: $Watermark"
+
+                    Write-Host ''
+                    Start-Sleep 100
+
+                    if ( $Global:ProcessSubfolders ) {
+                        $SubDirectories = Get-ChildItem -Directory
+                        foreach ( $Dir in $SubDirectories.FullName ) {
+                            Resize-SmallerizedImage -InputFolder $Dir -OverwriteOutputFolder
+
+                            $SmallerizedFolder = Join-Path -Path $Dir -ChildPath 'Smallerized'
+                            $WaterMarkedAndCopyrightedFolder = Join-Path -Path $Dir -ChildPath 'WatermarkedAndCopyrighted'
+                            Add-CopyrightAndWatermarkToImage -InputFolder $SmallerizedFolder -OutputFolder $WaterMarkedAndCopyrightedFolder -Watermark $Watermark -Copyright $Copyright
+                        }
+                    }
+                    else {
+                        Resize-SmallerizedImage -InputFolder $PWD -OverwriteOutputFolder
+
+                        $SmallerizedFolder = Join-Path -Path $PWD -ChildPath 'Smallerized'
+                        $WaterMarkedAndCopyrightedFolder = Join-Path -Path $PWD -ChildPath 'WatermarkedAndCopyrighted'
+                        Add-CopyrightAndWatermarkToImage -InputFolder $SmallerizedFolder -OutputFolder $WaterMarkedAndCopyrightedFolder -Watermark $Watermark -Copyright $Copyright
+                    }
                 }
             }
             'S' {

@@ -81,7 +81,7 @@ function Add-CopyrightAndWatermarkToImage {
         if ( -not $OutputFolder ) {
             $OutputFolder = Join-Path -Path $PWD -ChildPath 'Watermarked'
         }
-
+          
         Write-Verbose "   InputFolder  = $InputFolder"
         Write-Verbose "   OutputFolder = $OutputFolder"
         Write-Verbose "   Watermark    = $($Watermark.Replace("`n", "`n   "))"

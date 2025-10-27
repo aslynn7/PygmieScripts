@@ -60,7 +60,7 @@ function Resize-SmallerizedImage {
             }
             elseif ($OverwriteOutputFolder) {
                 Write-Verbose "Overwriting existing output folder: $OutputFolder"
-                Remove-Item $OutputFolder -Recurse -Force | Out-Null
+                Remove-Item $OverwriteOutputFolder -Recurse -Force | Out-Null
                 New-Item -ItemType Directory -Force -Path $OutputFolder | Out-Null
             }
 
