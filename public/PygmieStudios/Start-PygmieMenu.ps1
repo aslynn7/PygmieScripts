@@ -15,6 +15,7 @@ function Show-PygmieMenu {
     Write-Host '3. Move RAW files to Subfolders' -ForegroundColor White
     Write-Host '4. Cleanup Extraneous RAW/NEF Files' -ForegroundColor White
     Write-Host '5. Resize, Copyright, and Watermark Files' -ForegroundColor White
+    Write-Host '6. Add White Space to Bottoms of Images' -ForegroundColor White
     Write-Host 'S. Switch between Current Folder and Subfolder Mode' -ForegroundColor White
     Write-Host 'Q. Quit' -ForegroundColor White
     Write-Host '-----------------------------------' -ForegroundColor White
@@ -107,7 +108,6 @@ function Start-PygmieMenu {
                     Write-Host "Setting Watermark to: $Watermark"
 
                     Write-Host ''
-                    Start-Sleep 100
 
                     if ( $Global:ProcessSubfolders ) {
                         $SubDirectories = Get-ChildItem -Directory
@@ -126,6 +126,18 @@ function Start-PygmieMenu {
                         $WaterMarkedAndCopyrightedFolder = Join-Path -Path $PWD -ChildPath 'WatermarkedAndCopyrighted'
                         Add-CopyrightAndWatermarkToImage -InputFolder $SmallerizedFolder -OutputFolder $WaterMarkedAndCopyrightedFolder -Watermark $Watermark -Copyright $Copyright
                     }
+                }
+            }
+            '6' {
+                # Add White Space to Bottoms of Images
+                if ( $Global:ProcessSubfolders ) {
+                    $SubDirectories = Get-ChildItem -Directory
+                    foreach ( $Dir in $SubDirectories.FullName ) {
+                        Add-WhiteSpaceToImageBottoms -InputFolder $Dir
+                    }
+                }
+                else {
+                    Add-WhiteSpaceToImageBottoms -InputFolder $PWD
                 }
             }
             'S' {

@@ -147,7 +147,7 @@ function Add-CopyrightAndWatermarkToImage {
                         -fill 'rgba(255, 255, 255, 0.29)' `
                         -stroke 'rgba(0,0,0,0.5)' `
                         -strokewidth 2 `
-                        -annotate +10+10 "$Watermark" `
+                        -annotate +10+10 "$($Watermark)" `
                         $OutputFile
 
                     Write-Verbose 'Clean up temp file'
