@@ -17,6 +17,7 @@ function Show-PygmieMenu {
     Write-Host '5. Resize, Copyright, and Watermark Files' -ForegroundColor White
     Write-Host '6. Add White Space to Bottoms of Images' -ForegroundColor White
     Write-Host '7. Start Negative to Positive Conversion' -ForegroundColor White
+    Write-Host '8. Combine Front and Back Scans' -ForegroundColor White
     Write-Host 'S. Switch between Current Folder and Subfolder Mode' -ForegroundColor White
     Write-Host 'Q. Quit' -ForegroundColor White
     Write-Host '-----------------------------------' -ForegroundColor White
@@ -166,6 +167,18 @@ function Start-PygmieMenu {
                     else {
                         Start-NegativeToPositiveConversion -InputFolder $PWD -ColorSpace $ColorSpace
                     }
+                }
+            }
+            '8' {
+                # Combine Front and Back Scans
+                if ( $Global:ProcessSubfolders ) {
+                    $SubDirectories = Get-ChildItem -Directory
+                    foreach ( $Dir in $SubDirectories.FullName ) {
+                        Combine-FrontAndBackScans -InputFolder $Dir
+                    }
+                }
+                else {
+                    Combine-FrontAndBackScans -InputFolder $PWD
                 }
             }
             'S' {
