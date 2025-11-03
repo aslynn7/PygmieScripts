@@ -16,6 +16,7 @@ function Show-PygmieMenu {
     Write-Host '4. Cleanup Extraneous RAW/NEF Files' -ForegroundColor White
     Write-Host '5. Resize, Copyright, and Watermark Files' -ForegroundColor White
     Write-Host '6. Add White Space to Bottoms of Images' -ForegroundColor White
+    Write-Host '7. Start Negative to Positive Conversion' -ForegroundColor White
     Write-Host 'S. Switch between Current Folder and Subfolder Mode' -ForegroundColor White
     Write-Host 'Q. Quit' -ForegroundColor White
     Write-Host '-----------------------------------' -ForegroundColor White
@@ -138,6 +139,33 @@ function Start-PygmieMenu {
                 }
                 else {
                     Add-WhiteSpaceToImageBottoms -InputFolder $PWD
+                }
+            }
+            '7' {
+                # Start Negative to Positive Conversion
+                $ColorOrBW = Read-Host 'Are the negatives Color or Grayscale? (C/G)'
+                if ( $ColorOrBW -eq 'G' ) {
+                    $ColorSpace = 'Gray'
+                }
+                elseif ( $ColorOrBW -eq 'C' ) {
+                    $ColorSpace = 'RGB'
+                }
+                else {
+                    Write-Host 'Invalid option selected. Exiting to menu.' -ForegroundColor Red
+                    Start-Sleep -Seconds 2
+                    continue
+                }
+                
+                if ( $ColorSpace -eq 'Gray' -or $ColorSpace -eq 'RGB' ) {
+                    if ( $Global:ProcessSubfolders ) {
+                        $SubDirectories = Get-ChildItem -Directory
+                        foreach ( $Dir in $SubDirectories.FullName ) {
+                            Start-NegativeToPositiveConversion -InputFolder $Dir -ColorSpace $ColorSpace
+                        }
+                    }
+                    else {
+                        Start-NegativeToPositiveConversion -InputFolder $PWD -ColorSpace $ColorSpace
+                    }
                 }
             }
             'S' {

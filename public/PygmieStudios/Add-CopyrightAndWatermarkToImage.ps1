@@ -107,76 +107,86 @@ function Add-CopyrightAndWatermarkToImage {
                 New-Item -ItemType Directory -Force -Path $OutputFolder | Out-Null
             }
 
-            $Files = Get-ChildItem -Path $inputFolder\* -File -Include *.jpg, *.jpeg
+            $Patterns = $Global:LossyFileTypes
 
-            $Index = 0
+            $Files = @()
+            $Files += foreach ( $Pattern in $Patterns ) {
+                Get-ChildItem -Path $InputFolder -Filter $Pattern -File -ErrorAction SilentlyContinue
+            }
 
-            Write-Host "Adding Watermark and Metadata to $($Files.Count) files:" -ForegroundColor White
-            foreach ( $File in $Files ) {
-                $Index++
+            if ( $Files.Count -eq 0 ) {
+                Write-Warning "No image files found in input folder: $InputFolder"
+                $Result = $false
+            }
+            else {
+                $Index = 0
+                Write-Host "Adding Watermark and Metadata to $($Files.Count) files:" -ForegroundColor White
+                foreach ( $File in $Files ) {
+                    $Index++
 
-                $InputFile = $File.FullName
-                $OutputFile = Join-Path $OutputFolder $File.Name
+                    $InputFile = $File.FullName
+                    $OutputFile = Join-Path $OutputFolder $File.Name
 
-                try {
-                    Write-Verbose "Adding watermark to $InputFile"
-                    Write-Verbose '---------------------------------------------------'
+                    try {
+                        Write-Verbose "Adding watermark to $InputFile"
+                        Write-Verbose '---------------------------------------------------'
 
-                    Write-Verbose 'Auto-orient the image so portrait/landscape rotation is correct'
-                    $OrientedFile = "$InputFolder/oriented_temp.jpg"
-                    & magick $InputFile -auto-orient $OrientedFile
+                        Write-Verbose 'Auto-orient the image so portrait/landscape rotation is correct'
+                        $OrientedFile = "$InputFolder/oriented_temp.jpg"
+                        & magick $InputFile -auto-orient $OrientedFile
 
-                    Write-Verbose 'Get oriented image width'
-                    $imgWidth = [int](& magick identify -format '%w' $OrientedFile)
+                        Write-Verbose 'Get oriented image width'
+                        $imgWidth = [int](& magick identify -format '%w' $OrientedFile)
 
-                    Write-Verbose 'Base font size for measurement'
-                    $baseSize = 20
+                        Write-Verbose 'Base font size for measurement'
+                        $baseSize = 20
 
-                    Write-Verbose 'Measure text width at base size'
-                    $textWidth = [int](& magick -debug none -font $FontName -pointsize $baseSize label:"$Watermark" -format '%w' info:)
+                        Write-Verbose 'Measure text width at base size'
+                        $textWidth = [int](& magick -debug none -font $FontName -pointsize $baseSize label:"$Watermark" -format '%w' info:)
 
-                    Write-Verbose 'Compute font size to make watermark ~30% of oriented image width'
-                    $targetWidth = $imgWidth * $FontSizePercentage
-                    $FontSize = [math]::Floor($baseSize * ($targetWidth / $textWidth))
+                        Write-Verbose 'Compute font size to make watermark ~30% of oriented image width'
+                        $targetWidth = $imgWidth * $FontSizePercentage
+                        $FontSize = [math]::Floor($baseSize * ($targetWidth / $textWidth))
 
-                    Write-Verbose 'Apply watermark to auto-oriented image'
-                    & magick $OrientedFile `
-                        -font $FontName `
-                        -gravity southeast `
-                        -pointsize $FontSize `
-                        -fill 'rgba(255, 255, 255, 0.29)' `
-                        -stroke 'rgba(0,0,0,0.5)' `
-                        -strokewidth 2 `
-                        -annotate +10+10 "$($Watermark)" `
-                        $OutputFile
+                        Write-Verbose 'Apply watermark to auto-oriented image'
+                        & magick $OrientedFile `
+                            -font $FontName `
+                            -gravity southeast `
+                            -pointsize $FontSize `
+                            -fill 'rgba(255, 255, 255, 0.29)' `
+                            -stroke 'rgba(0,0,0,0.5)' `
+                            -strokewidth 2 `
+                            -annotate +10+10 "$($Watermark)" `
+                            $OutputFile
 
-                    Write-Verbose 'Clean up temp file'
-                    Remove-Item $OrientedFile -Force
+                        Write-Verbose 'Clean up temp file'
+                        Remove-Item $OrientedFile -Force
 
-                    Write-Verbose "Adding metadata to $OutputFile"
-                    Write-Verbose '---------------------------------------------------'
-                    & exiftool `
-                        -overwrite_original `
-                        "-Copyright=$Copyright" `
-                        "-IPTC:CopyrightNotice=$Copyright" `
-                        "-XMP-dc:Rights=$Copyright" `
-                        "-Title=$Title" `
-                        "-Artist=$Author" `
-                        "-Creator=$Author" `
-                        "-XMP-dc:Creator=$Author" `
-                        "-IPTC:Keywords=$Tags" `
-                        "-XMP-dc:Description=$Comment" `
-                        "-EXIF:UserComment=$Comment" `
-                        $OutputFile | Out-Null
+                        Write-Verbose "Adding metadata to $OutputFile"
+                        Write-Verbose '---------------------------------------------------'
+                        & exiftool `
+                            -overwrite_original `
+                            "-Copyright=$Copyright" `
+                            "-IPTC:CopyrightNotice=$Copyright" `
+                            "-XMP-dc:Rights=$Copyright" `
+                            "-Title=$Title" `
+                            "-Artist=$Author" `
+                            "-Creator=$Author" `
+                            "-XMP-dc:Creator=$Author" `
+                            "-IPTC:Keywords=$Tags" `
+                            "-XMP-dc:Description=$Comment" `
+                            "-EXIF:UserComment=$Comment" `
+                            $OutputFile | Out-Null
 
-                    Write-Host "[$Index/$($Files.Count)] $InputFile => $OutputFile " -ForegroundColor Green
+                        Write-Host "[$Index/$($Files.Count)] $InputFile => $OutputFile " -ForegroundColor Green
+                    }
+                    catch {
+                        $Result = $False
+                        Write-Host "[$Index/$($Files.Count)] $InputFile => $OutputFile - Error = $_" -ForegroundColor Red
+                    }
+
+                    $Result = $Result -band $True
                 }
-                catch {
-                    $Result = $False
-                    Write-Host "[$Index/$($Files.Count)] $InputFile => $OutputFile - Error = $_" -ForegroundColor Red
-                }
-
-                $Result = $Result -band $True
             }
         }
         catch {

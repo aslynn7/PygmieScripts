@@ -64,22 +64,32 @@ function Resize-SmallerizedImage {
                 New-Item -ItemType Directory -Force -Path $OutputFolder | Out-Null
             }
 
-            $Files = Get-ChildItem -Path $InputFolder/* -Include *.jpg, *.jpeg
+            $Patterns = $Global:LossyFileTypes
 
-            $Index = 0
-            
-            Write-Host "Smallerizing $($Files.Count) files:" -ForegroundColor Cyan
+            $Files = @()
+            $Files += foreach ( $Pattern in $Patterns ) {
+                Get-ChildItem -Path $InputFolder -Filter $Pattern -File -ErrorAction SilentlyContinue
+            }
 
-            foreach ( $File in $Files ) {
-                $Index++
-                try {
-                    $OutputFile = Join-Path $OutputFolder $File.Name
-                    magick $File.FullName -define jpeg:extent=${MaxSizeKB}KB $OutputFile
-                    Write-Host "[$Index/$($Files.Count)] $($File.Name) -> $OutputFile" -ForegroundColor Green
-                }
-                catch {
-                    $Result = $False
-                    Write-Host "[$Index/$($Files.Count)] $($File.Name) -> $OutputFile" -ForegroundColor Green
+            if ( $Files.Count -eq 0 ) {
+                Write-Host 'No files found!' -ForegroundColor Yellow
+                $Result = $False
+            }
+            else {
+                $Index = 0
+                Write-Host "Smallerizing $($Files.Count) files:" -ForegroundColor Cyan
+
+                foreach ( $File in $Files ) {
+                    $Index++
+                    try {
+                        $OutputFile = Join-Path $OutputFolder $File.Name
+                        magick $File.FullName -define jpeg:extent=${MaxSizeKB}KB $OutputFile
+                        Write-Host "[$Index/$($Files.Count)] $($File.Name) -> $OutputFile" -ForegroundColor Green
+                    }
+                    catch {
+                        $Result = $False
+                        Write-Host "[$Index/$($Files.Count)] $($File.Name) -> $OutputFile" -ForegroundColor Green
+                    }
                 }
             }
 
