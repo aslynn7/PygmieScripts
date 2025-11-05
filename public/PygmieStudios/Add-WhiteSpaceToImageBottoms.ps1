@@ -40,32 +40,33 @@ function Add-WhiteSpaceToImageBottoms {
         Write-Verbose -Message "[$($MyInvocation.MyCommand.Name)] - Entering 'process' block"
 
         try {
-            $Patterns = $Global:LossyFileTypes + $Global:RawFileTypes
+            $AllFileTypes = $Global:LossyFileTypes + $Global:RawFileTypes
 
-            $Pictures = foreach ( $Pattern in $Patterns ) {
-                Get-ChildItem -Path $InputFolder -Filter $Pattern -File -ErrorAction SilentlyContinue
+            $Files = @()
+            $Files += foreach ( $FileType in $AllFileTypes ) {
+                Get-ChildItem -Path $InputFolder -Filter $FileType -File -ErrorAction SilentlyContinue
             }
 
             $Index = 0
 
-            if ( -not $Pictures ) {
-                Write-Warning "No pictures found in $InputFolder"
+            if ( $Files.Count -eq 0 ) {
+                Write-Warning "No photos found in $InputFolder"
             }
             else {
                 Write-Host ''
-                Write-Host "Resizing $($Pictures.Count) images:" -ForegroundColor Cyan
+                Write-Host "Resizing $($Files.Count) images:" -ForegroundColor Cyan
 
-                foreach ( $Picture in $Pictures ) {
+                foreach ( $File in $Files ) {
                     $Index++
 
                     try {
-                        & magick $($Picture.FullName) -gravity north -background white -extent %wx%[fx:2*h] $($Picture.FullName)
+                        & magick $($File.FullName) -gravity north -background white -extent %wx%[fx:2*h] $($File.FullName)
 
-                        Write-Host "[$Index/$($Pictures.Count)] Resized $($Picture.FullName)" -ForegroundColor Green
+                        Write-Host "[$Index/$($Files.Count)] Resized $($File.FullName)" -ForegroundColor Green
                     }
                     catch {
                         $Result = $False
-                        Write-Host "[$Index/$($Pictures.Count)] Failed resizing $($Picture.FullName)" -ForegroundColor Red
+                        Write-Host "[$Index/$($Files.Count)] Failed resizing $($File.FullName)" -ForegroundColor Red
                     }
                 }
             }

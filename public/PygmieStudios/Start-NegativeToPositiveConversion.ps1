@@ -56,7 +56,7 @@ function Start-NegativeToPositiveConversion {
             }
             else {
                 Write-Host ''
-                Write-Host "Converting $($Pictures.Count) images:" -ForegroundColor Cyan
+                Write-Host "Negitivating $($Pictures.Count) images:" -ForegroundColor Cyan
 
                 foreach ( $Picture in $Pictures ) {
                     $Index++
@@ -68,8 +68,7 @@ function Start-NegativeToPositiveConversion {
                             $Extension = '.png'
                         }
 
-                        $OutputFile = "$($InputFile.Substring(0, $InputFile.Length - 4))_$($ColorSpace)_positive$($Extension)"
-                        Write-Host "Output File: $OutputFile"
+                        $OutputFile = "$($InputFile.Substring(0, $InputFile.Length - 4)) ($($ColorSpace)-Negatized)$($Extension)"
 
                         & magick $InputFile -colorspace $ColorSpace -negate -quality 100 -auto-orient $OutputFile
 

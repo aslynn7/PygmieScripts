@@ -1,13 +1,13 @@
 function Move-ImagesToTimeStampedFolders {
     <#
    .SYNOPSIS
-      Sorts iages into named folders by creation date.
+      Sorts images into named folders by creation date.
 
    .DESCRIPTION
-      Sorts iages into named folders by creation date.
+      Sorts images into named folders by creation date.
 
    .INPUTS
-        [System.String] $InputFolder = Folder where the input .jpg/.jpeg, .raw, .nef, and .raf files are located.
+      [System.String] $InputFolder = Folder where the images are located. Default is the current working directory.
 
    .OUTPUTS
       [Bool] = $True on success (or lack of exceptions), $False on failure.
@@ -39,39 +39,51 @@ function Move-ImagesToTimeStampedFolders {
         Write-Verbose -Message "[$($MyInvocation.MyCommand.Name)] - Entering 'process' block"
 
         try {
-            $Patterns = $Global:LossyFileTypes + $Global:RawFileTypes
+            $AllFileTypes = $Global:LossyFileTypes + $Global:RawFileTypes
 
-            $Pictures = foreach ( $Pattern in $Patterns ) {
-                Get-ChildItem -Path $InputFolder -Filter $Pattern -File -ErrorAction SilentlyContinue
+            $Files = @()
+            $Files += foreach ( $FileType in $AllFileTypes ) {
+                Get-ChildItem -Path $InputFolder -Filter $FileType -File -ErrorAction SilentlyContinue
             }
+
+            $Files = $Files | Sort-Object -Property LastWriteTime -Descending
 
             $Index = 0
 
-            if ( -not $Pictures ) {
-                Write-Warning "No pictures found in $InputFolder"
+            if ( $Files.Count -eq 0 ) {
+                Write-Warning "No image files found in input folder: $InputFolder"
+                $Result = $True
             }
             else {
                 Write-Host ''
-                Write-Host "Sorting $($Pictures.Count) images into date based subfolders:" -ForegroundColor Cyan
+                Write-Host "Moving $($Files.Count) images from: $($InputFolder)" -ForegroundColor Cyan
 
-                foreach ( $Picture in $Pictures ) {
+                $TargetFolders = @()
+
+                foreach ( $File in $Files ) {
                     $Index++
 
                     try {
-                        [System.String] $DateTaken = ([DateTime]$Picture.LastWriteTime ).ToString('MM-dd-yyyy')
+                        [System.String] $DateTaken = ([DateTime]$File.LastWriteTime ).ToString('MM-dd-yyyy')
 
                         $WriteToFolder = Join-Path $InputFolder -ChildPath $DateTaken
+
+                        if ( $TargetFolders -notcontains $WriteToFolder ) {
+                            Write-Host "To: $WriteToFolder" -ForegroundColor Cyan
+                        }
+
+                        $TargetFolders += $WriteToFolder
 
                         if ( -not ( Test-Path $WriteToFolder ) ) {
                             New-Item -Path $WriteToFolder -ItemType Directory -Force | Out-Null
                         }
 
-                        Move-Item -Path $Picture.FullName -Destination $WriteToFolder -Force
-                        Write-Host "[$Index/$($Pictures.Count)] Moving $($Picture.FullName) -> $($InputFolder)/$DateTaken" -ForegroundColor Green
+                        Move-Item -Path $File.FullName -Destination $WriteToFolder -Force
+                        Write-Host "   [$Index/$($Files.Count)] $($File.FullName) -> $($InputFolder)/$DateTaken" -ForegroundColor Green
                     }
                     catch {
                         $Result = $False
-                        Write-Host "[$Index/$($Pictures.Count)] Failed Move $($Picture.FullName) -> $($InputFolder)/$DateTaken" -ForegroundColor Red
+                        Write-Host "   [$Index/$($Files.Count)] $($File.FullName) -> $($InputFolder)/$DateTaken" -ForegroundColor Red
                     }
                 }
             }

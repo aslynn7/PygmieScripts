@@ -1,10 +1,10 @@
 function Add-CopyrightAndWatermarkToImage {
     <#
    .SYNOPSIS
-      Adds watermark and metadata to images in a specified folder.
+      Adds watermark, copyright, and metadata to images in a specified folder.
 
    .DESCRIPTION
-      Adds watermark and metadata to images in a specified folder.
+      Adds watermark, copyright, and metadata to images in a specified folder.
 
    .INPUTS
         [System.String] $InputFolder = Folder where the input .jpg/.jpeg files are located.
@@ -16,7 +16,7 @@ function Add-CopyrightAndWatermarkToImage {
         [System.String] $Tags = Tags to be added to the image metadata; these are comma-separated.
         [System.String] $Comment = Comment to be added to the image metadata.
         [System.String] $FontName = Name of the font to be used for the watermark.
-        [System.Int16] $FontSize = Size of the font to be used for the watermark.
+        [System.Int16] $FontSizePercentage = Size of the font to be used for the watermark.
         [Switch] $OverwriteOutputFolder = If specified, will overwrite the output folder if it already exists.
 
    .OUTPUTS
@@ -43,16 +43,16 @@ function Add-CopyrightAndWatermarkToImage {
         [System.String] $OutputFolder = $Null,
 
         [Parameter(Mandatory = $False)]
-        [System.String] $Watermark = "Copyright 2025 (c) Pygmie Studios`nAll Rights Reserved",
+        [System.String] $Watermark = 'Copyright 2025 (c)\nAll Rights Reserved',
 
         [Parameter(Mandatory = $False)]
-        [System.String] $Copyright = 'Copyright 2025 (c) Pygmie Studios All Rights Reserved',
+        [System.String] $Copyright = 'Copyright 2025 (c) All Rights Reserved',
 
         [Parameter(Mandatory = $False)]
         [System.String] $Title = '',
 
         [Parameter(Mandatory = $False)]
-        [System.String] $Author = 'Aslynn Meyers',
+        [System.String] $Author = 'John Smith',
 
         [Parameter(Mandatory = $False)]
         [System.String] $Tags = '',
@@ -73,18 +73,18 @@ function Add-CopyrightAndWatermarkToImage {
     begin {
         Write-Verbose -Message "[$($MyInvocation.MyCommand.Name)] - Entering 'begin' block"
 
-        [Bool] $Result = $True
+        [Bool] $Result = $true
 
         Write-Host ''
-        Write-Host 'Calling Add-CopyrightAndWatermarkToImage() with the following parameters:' -ForegroundColor Cyan
+        Write-Verbose 'Calling Add-CopyrightAndWatermarkToImage() with the following parameters:'
 
         if ( -not $OutputFolder ) {
             $OutputFolder = Join-Path -Path $PWD -ChildPath 'Watermarked'
         }
-          
+
         Write-Verbose "   InputFolder  = $InputFolder"
         Write-Verbose "   OutputFolder = $OutputFolder"
-        Write-Verbose "   Watermark    = $($Watermark.Replace("`n", "`n   "))"
+        Write-Verbose "   Watermark    = $Watermark"
         Write-Verbose "   Copyright    = $Copyright"
         Write-Verbose "   Title        = $Title"
         Write-Verbose "   Author       = $Author"
@@ -99,6 +99,7 @@ function Add-CopyrightAndWatermarkToImage {
 
         try {
             if (-not (Test-Path $OutputFolder)) {
+                Write-Verbose "Creating output folder: $OutputFolder"
                 New-Item -ItemType Directory -Force -Path $OutputFolder | Out-Null
             }
             elseif ($OverwriteOutputFolder) {
@@ -107,20 +108,20 @@ function Add-CopyrightAndWatermarkToImage {
                 New-Item -ItemType Directory -Force -Path $OutputFolder | Out-Null
             }
 
-            $Patterns = $Global:LossyFileTypes
+            $AllFileTypes = $Global:LossyFileTypes
 
             $Files = @()
-            $Files += foreach ( $Pattern in $Patterns ) {
-                Get-ChildItem -Path $InputFolder -Filter $Pattern -File -ErrorAction SilentlyContinue
+            $Files += foreach ( $FileType in $AllFileTypes ) {
+                Get-ChildItem -Path $InputFolder -Filter $FileType -File -ErrorAction SilentlyContinue
             }
 
             if ( $Files.Count -eq 0 ) {
                 Write-Warning "No image files found in input folder: $InputFolder"
-                $Result = $false
+                $Result = $True
             }
             else {
                 $Index = 0
-                Write-Host "Adding Watermark and Metadata to $($Files.Count) files:" -ForegroundColor White
+                Write-Host "Adding Watermark and Metadata to $($Files.Count) files:" -ForegroundColor Cyan
                 foreach ( $File in $Files ) {
                     $Index++
 

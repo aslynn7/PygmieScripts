@@ -1,22 +1,27 @@
 function Rename-PhotoFiles {
     <#
    .SYNOPSIS
-      Blah
+      Renames photo files in a folder to a standardized format.
 
    .DESCRIPTION
-      Blah
+      Renames photo files in a folder to a standardized format.
 
    .INPUTS
-        Blah
+      InputFolder = The folder containing the photo files to rename.  The default is the current working directory.
+      FilenamePrefix = The prefix to use for the renamed files.  The default is 'Photo-'.
+      UseFolderNamePrefixing = If set, uses the folder name as the prefix, not the passed in Filename Prefix.
 
    .OUTPUTS
       [Bool] = $True on success (or lack of exceptions), $False on failure.
 
    .EXAMPLE
-      Blah
+      Rename-PhotoFiles
 
-   .NOTES
-      Blah
+   .EXAMPLE
+      Rename-PhotoFiles -FilenamePrefix 'Vacation-'
+
+   .EXAMPLE
+      Rename-PhotoFiles -UseFolderNamePrefixing
 #>
     [CmdletBinding()]
     [OutputType([Bool])]
@@ -26,11 +31,9 @@ function Rename-PhotoFiles {
         [System.String] $InputFolder = $PWD,
 
         [Parameter(Mandatory = $False)]
-        [System.String] $FilenamePrefix = $Null,
+        [System.String] $FilenamePrefix = 'Photo-',
 
-        [Switch] $SkipFolderNamePrefixing,
-
-        [Switch] $PhaysPhotos
+        [Switch] $UseFolderNamePrefixing
     )
 
     begin {
@@ -40,19 +43,9 @@ function Rename-PhotoFiles {
 
         Write-Verbose 'Calling Rename-PhotoFiles() with the following parameters:'
 
-        if ( $SkipFolderNamePrefixing ) {
-            if ( [System.String]::IsNullOrEmpty( $FilenamePrefix ) ) {
-                $FilenamePrefix = 'Photo-'
-            }
-        }
-        else {
-            $FolderName = ( Split-Path -Path $InputFolder -Leaf )
-            if ( [System.String]::IsNullOrEmpty( $FilenamePrefix ) ) {
-                $FilenamePrefix = "$FolderName-Photo-"
-            }
-            else {
-                $FilenamePrefix = "$FolderName-$FilenamePrefix"
-            }
+        if ( $UseFolderNamePrefixing ) {
+            $FilenamePrefix = Split-Path -Path $InputFolder -Leaf
+            $FilenamePrefix += '-'
         }
 
         Write-Verbose "   InputFolder  = $InputFolder"
@@ -79,37 +72,46 @@ function Rename-PhotoFiles {
 
                 $FileIndex = 0
                 foreach ( $File in $Files ) {
-                    $FileIndex++
-                    $BaseName = [System.IO.Path]::GetFileNameWithoutExtension($File.Name)
-                    #$NewName = '{0}{1:D4}{2}' -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $File.Extension
-                    $Digits = [Math]::Max( [Math]::Ceiling( [Math]::Log10( [Math]::Max($Files.Count, 1) + 1 ) ), 1 )
-                    $NewName = ("{0}{1:D$Digits}{2}" -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $File.Extension)
+                    try {
+                        $null = Get-Item -Path $File.FullName -ErrorAction Stop
 
-                    Rename-Item -Path $File.FullName -NewName $NewName
-                    Write-Host "[$FileTypeIndex][$FileIndex/$($Files.Count)] Renaming $($File.Name) -> $NewName" -ForegroundColor Green
+                        $FileIndex++
+                        $BaseName = [System.IO.Path]::GetFileNameWithoutExtension($File.Name)
+                        $Digits = [Math]::Max( [Math]::Ceiling( [Math]::Log10( [Math]::Max($Files.Count, 1) + 1 ) ), 1 )
+                        $NewName = ("{0}{1:D$Digits}{2}" -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $File.Extension)
 
-                    $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.RAW" -File
-                    if ( -not $RawFile ) {
-                        $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.NEF" -File
+                        Rename-Item -Path $File.FullName -NewName $NewName
+                        Write-Host "[$FileTypeIndex][$FileIndex/$($Files.Count)] Renaming $($File.Name) -> $NewName" -ForegroundColor Green
+
+                        $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.RAW" -File
+                        if ( -not $RawFile ) {
+                            $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.NEF" -File
+                        }
+                        if ( -not $RawFile ) {
+                            $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.PNG" -File
+                        }
+
+                        if ( $RawFile ) {
+                            $NewRawName = ("{0}{1:D$Digits}{2}" -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $RawFile.Extension)
+
+                            Rename-Item -Path $RawFile.FullName -NewName $NewRawName
+
+                            Write-Host "[$FileTypeIndex][$FileIndex] $RawFile -> $NewRawName" -ForegroundColor Green
+                        }
+
+                        $Result = $Result -band $true
                     }
-                    if ( -not $RawFile ) {
-                        $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.PNG" -File
-                    }
+                    catch {
+                        Write-Warning "Failed renaming $($File.FullName), continuing..."
 
-                    if ( $RawFile ) {
-                        # $NewRawName = '{0}{1:D4}{2}' -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $RawFile.Extension
-                        $NewRawName = ("{0}{1:D$Digits}{2}" -f $FilenamePrefix, ($Files.IndexOf($File) + 1), $RawFile.Extension)
-
-                        Rename-Item -Path $RawFile.FullName -NewName $NewRawName
-                        Write-Host "[$FileTypeIndex][$FileIndex] $RawFile -> $NewRawName" -ForegroundColor Green
+                        $Result = $false
                     }
                 }
             }
-
-            $Result = $True
         }
         catch {
             $Result = $False
+
             throw $("Error encountered in [$($MyInvocation.MyCommand.Name)] - " + $_.Exception)
         }
 

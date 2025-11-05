@@ -1,22 +1,19 @@
 function Move-RawFilesToSubfolders {
     <#
    .SYNOPSIS
-      Blah
+      Moves any RAW/Lossless files to a 'RAW' subfolder within the specified folder.
 
    .DESCRIPTION
-      Blah
+      Moves any RAW/Lossless files to a 'RAW' subfolder within the specified folder.
 
    .INPUTS
-        Blah
+      [System.String] Path to the folder containing files to be moved. Defaults to the current working directory.
 
    .OUTPUTS
       [Bool] = $True on success (or lack of exceptions), $False on failure.
 
    .EXAMPLE
-      Blah
-
-   .NOTES
-      Blah
+      Move-RawFilesToSubfolders
 #>
     [CmdletBinding()]
     [OutputType([Bool])]
@@ -32,9 +29,8 @@ function Move-RawFilesToSubfolders {
         [Bool] $Result = $true
 
         Write-Host ''
-        Write-Host "Moving RAW files in $InputFolder to $InputFolder/RAW" -ForegroundColor Cyan
-
-        Write-Verbose "   InputFolder  = $InputFolder"
+        Write-Host "Moving RAW files in: $($InputFolder):" -ForegroundColor Cyan
+        Write-Host "To: $InputFolder/RAW" -ForegroundColor Cyan
 
         Write-Verbose -Message "[$($MyInvocation.MyCommand.Name)] - Exiting 'begin' block"
     }
@@ -52,12 +48,19 @@ function Move-RawFilesToSubfolders {
             foreach ( $FileType in $Global:RawFileTypes ) {
                 Write-Verbose "Processing file type: $FileType"
                 Get-ChildItem -Path $InputFolder -Filter $FileType -File | ForEach-Object {
-                    Move-Item -Path $_.FullName -Destination $RawFolder
-                    Write-Host "  - Moved file: $($_.Name)" -ForegroundColor Green
+                    try {
+                        Move-Item -Path $_.FullName -Destination $RawFolder
+                        Write-Host "  - Moved: $($_.Name)" -ForegroundColor Green
+                        $Result = $Result -band $True
+                    }
+                    catch {
+                        Write-Host "  - Move Failed: $($_.Name) - $($_.Exception.Message)" -ForegroundColor Red
+                        $Result = $false
+                    }
                 }
             }
 
-            $Result = $True
+            $Result = $Result -band $True
         }
         catch {
             $Result = $False

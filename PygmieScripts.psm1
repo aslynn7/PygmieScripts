@@ -30,4 +30,5 @@ catch {
 $Global:LossyFileTypes = @('*.jpg', '*.jpeg' )
 $Global:RawFileTypes = @('*.png', '*.raw', '*.nef', '*.bmp', '*.cr2' )
 
-$Global:ProcessSubfolders = $true
+$Global:ProcessSubfolders = $False
+$Global:LastCommandResults = $Null

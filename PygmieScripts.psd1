@@ -69,13 +69,12 @@
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
     FunctionsToExport    = @(
+        'Go-P',
         'Add-CopyrightAndWatermarkToImage',
         'Move-ImagesToTimeStampedFolders',
         'Resize-SmallerizedImage',
-        'Start-PygmiePhotoMagic',
         'Rename-PhotoFiles',
         'Cleanup-ExtraneousRAWFiles',
-        'Start-PygmieMenu',
         'Move-RawFilesToSubfolders',
         'Add-WhiteSpaceToImageBottoms',
         'Start-NegativeToPositiveConversion',
