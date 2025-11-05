@@ -25,6 +25,9 @@ function Show-PygmieMenu {
     Write-Host '  6. Add White Space to Bottoms of Images' -ForegroundColor White
     Write-Host '  7. Start Negative to Positive Conversion' -ForegroundColor White
     Write-Host '  8. Combine Front and Back Scans' -ForegroundColor White
+    Write-Host ''
+    Write-Host '  9. Smallerize .mp4 file' -ForegroundColor White
+    Write-Host ''
     Write-Host '  S. Switch between Current Folder and Subfolder Mode' -ForegroundColor White
     Write-Host ''
     Write-Host 'All = Run All Steps I normally Run (1 - 5)' -ForegroundColor White
@@ -258,6 +261,12 @@ function Go-P {
             '8' {
                 Start-9
                 Read-Host "`nPress Enter to continue"
+            }
+            '9' {
+                $InputFile = Read-Host 'Enter the Fully Qualified Path of the input file'
+                $OutputFile = Read-Host 'Enter the Fully Qualified Path of the Output File ([Enter] for defaults)'
+                
+                Convert-VideoToStreamableVersion -InputFile $InputFile -OutputFile $OutputFile 
             }
             'S' {
                 if ( $Global:ProcessSubfolders ) {
