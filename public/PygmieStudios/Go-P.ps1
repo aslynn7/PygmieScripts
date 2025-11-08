@@ -27,6 +27,7 @@ function Show-PygmieMenu {
     Write-Host '  8. Combine Front and Back Scans' -ForegroundColor White
     Write-Host ''
     Write-Host '  9. Smallerize .mp4 file' -ForegroundColor White
+    Write-Host ' 10. Convert MP4 file to MP3 file' -ForegroundColor White
     Write-Host ''
     Write-Host '  S. Switch between Current Folder and Subfolder Mode' -ForegroundColor White
     Write-Host ''
@@ -182,6 +183,11 @@ function Start-8 {
     $Global:LastCommandResults = "Cleaned Extranous RAW files = $Results"
 }
 
+function Start-10 {
+    # Convert MP4 file to MP3 file
+    $Result = Convert-Mp4ToMp3
+}
+
 function Go-P {
     do {
         Clear-Host
@@ -267,6 +273,10 @@ function Go-P {
                 $OutputFile = Read-Host 'Enter the Fully Qualified Path of the Output File ([Enter] for defaults)'
                 
                 Convert-VideoToStreamableVersion -InputFile $InputFile -OutputFile $OutputFile 
+            }
+            '10' {
+                Start-10
+                Read-Host "`nPress Enter to continue"
             }
             'S' {
                 if ( $Global:ProcessSubfolders ) {
