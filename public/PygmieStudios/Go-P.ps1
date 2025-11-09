@@ -257,15 +257,15 @@ function Go-P {
                 Read-Host "`nPress Enter to continue"
             }
             '6' {
-                Start-7
+                Start-6
                 Read-Host "`nPress Enter to continue"
             }
             '7' {
-                Start-8
+                Start-7
                 Read-Host "`nPress Enter to continue"
             }
             '8' {
-                Start-9
+                Start-8
                 Read-Host "`nPress Enter to continue"
             }
             '9' {
