@@ -33,6 +33,8 @@ function Rename-PhotoFiles {
         [Parameter(Mandatory = $False)]
         [System.String] $FilenamePrefix = 'Photo-',
 
+        # GROK ADD SORT BY NAME, CREATION DATE, MODIFIED DATE, ETC.
+
         [Switch] $UseFolderNamePrefixing
     )
 
@@ -68,7 +70,16 @@ function Rename-PhotoFiles {
 
                 Write-Verbose "Processing file type: $FileType"
 
-                $Files = Get-ChildItem -Path $InputFolder -Filter $FileType -File | Sort-Object LastWriteTime
+                #$Files = Get-ChildItem -Path $InputFolder -Filter $FileType -File | Sort-Object LastWriteTime
+                # Get all matching image files in the input folder, sorted alphabetically (using same sort order by name as MacOS Finder)
+                $files = Get-ChildItem -Path $InputFolder -Filter $FileType -File |
+                Sort-Object {
+                    # take the filename
+                    $name = $_.Name
+                    # replace every run of digits with a zero-padded version
+                    # 10 digits is plenty for "…- 38- 34.png" type names
+                    [regex]::Replace($name, '\d+', { param($m) $m.Value.PadLeft(10, '0') }).ToLower()
+                }
 
                 $FileIndex = 0
                 foreach ( $File in $Files ) {
@@ -82,7 +93,7 @@ function Rename-PhotoFiles {
 
                         Rename-Item -Path $File.FullName -NewName $NewName
                         Write-Host "[$FileTypeIndex][$FileIndex/$($Files.Count)] Renaming $($File.Name) -> $NewName" -ForegroundColor Green
-
+                        
                         $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.RAW" -File
                         if ( -not $RawFile ) {
                             $RawFile = Get-ChildItem -Path $InputFolder -Filter "$BaseName.NEF" -File

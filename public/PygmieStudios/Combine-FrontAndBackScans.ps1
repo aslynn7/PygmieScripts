@@ -26,10 +26,16 @@ function Combine-FrontAndBackScans {
     # Define valid image extensions
     $validExtensions = @('.jpg', '.jpeg', '.png', '.tif', '.tiff')
 
-    # Get all matching image files in the input folder, sorted alphabetically
+    # Get all matching image files in the input folder, sorted alphabetically (using same sort order by name as MacOS Finder)
     $files = Get-ChildItem -Path $InputFolder -File |
     Where-Object { $validExtensions -contains $_.Extension.ToLower() } |
-    Sort-Object CreationTime
+    Sort-Object {
+        # take the filename
+        $name = $_.Name
+        # replace every run of digits with a zero-padded version
+        # 10 digits is plenty for "…- 38- 34.png" type names
+        [regex]::Replace($name, '\d+', { param($m) $m.Value.PadLeft(10, '0') }).ToLower()
+    }
 
     if ($files.Count -lt 2) {
         Write-Host '❌ Not enough image files in this folder to combine. Need at least 2.' -ForegroundColor Yellow
@@ -48,7 +54,9 @@ function Combine-FrontAndBackScans {
         $topImage = $files[$i].FullName
         $bottomImage = $files[$i + 1].FullName
 
-        Write-Host '✅ Combining:'
+        Write-Host ''
+        Write-Host "[$i & $($i + 1)/$($files.Count)] ✅ Combining:"
+
         Write-Host "   Top   → $($files[$i].Name)"
         Write-Host "   Bottom→ $($files[$i + 1].Name)"
 

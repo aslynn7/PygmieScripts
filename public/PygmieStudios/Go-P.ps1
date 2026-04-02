@@ -17,6 +17,7 @@ function Show-PygmieMenu {
         Write-Host ''
     }
     Write-Host '===================================' -ForegroundColor White
+    Write-Host '  0. Convert RAW/PNG/BMP to High-Res JPG' -ForegroundColor White
     Write-Host '  1. Move images to date/time stamped folders' -ForegroundColor White
     Write-Host '  2. Rename Files' -ForegroundColor White
     Write-Host '  3. Move RAW files to Subfolders' -ForegroundColor White
@@ -31,10 +32,19 @@ function Show-PygmieMenu {
     Write-Host ''
     Write-Host '  S. Switch between Current Folder and Subfolder Mode' -ForegroundColor White
     Write-Host ''
-    Write-Host 'All = Run All Steps I normally Run (1 - 5)' -ForegroundColor White
+    Write-Host 'All = Run All Steps I normally Run (2, 0, 3, [4], then 5)' -ForegroundColor White
     Write-Host ''
     Write-Host ' Q/[Enter] = Quit' -ForegroundColor White
     Write-Host '===================================' -ForegroundColor White
+}
+
+function Start-0 {
+    # Move images to date/time stamped folders
+    foreach ( $Dir in $Global:Directories ) {
+        $Results = Convert-RawOrPngToHighResJpg -InputFolder $Dir
+    }
+
+    $Global:LastCommandResults = "Converted RAW files to high res JPG files = $Results"
 }
 
 function Start-1 {
@@ -131,7 +141,7 @@ function Start-5 {
 
             $SmallerizedFolder = Join-Path -Path $Dir -ChildPath 'Smallerized'
             $WaterMarkedAndCopyrightedFolder = Join-Path -Path $Dir -ChildPath 'WatermarkedAndCopyrighted'
-            $Results = $Result -band (Add-CopyrightAndWatermarkToImage -InputFolder $SmallerizedFolder -OutputFolder $WaterMarkedAndCopyrightedFolder -Watermark $Watermark -Copyright $Copyright -Author $Author)
+            $Results = $Results -band (Add-CopyrightAndWatermarkToImage -InputFolder $SmallerizedFolder -OutputFolder $WaterMarkedAndCopyrightedFolder -Watermark $Watermark -Copyright $Copyright -Author $Author)
         }
 
         $Global:LastCommandResults = "Resized, copyrighted, and watermarked files = $Results"
@@ -194,7 +204,7 @@ function Go-P {
 
         Show-PygmieMenu
 
-        $DoSomething = Read-Host 'Select an option (1, 2, 3, 4, 5, 6, 7, 8, All, S or Q)'
+        $DoSomething = Read-Host 'Select an option (0, 1, 2, 3, 4, 5, 6, 7, 8, All, S or Q)'
 
         if ( $Global:ProcessSubfolders ) {
             $Global:Directories = ( Get-ChildItem -Directory ).FullName
@@ -217,13 +227,13 @@ function Go-P {
                 Write-Host 'Switched to Current Folder Mode' -ForegroundColor Cyan
                 $Global:Directories = @( $PWD )
 
-                Start-1
-
-                $Global:ProcessSubfolders = $True
-                Write-Host 'Switched to Subfolder Mode' -ForegroundColor Cyan
-                $Global:Directories = ( Get-ChildItem -Directory ).FullName
-
                 Start-2
+                Start-0
+
+                #$Global:ProcessSubfolders = $True
+                #Write-Host 'Switched to Subfolder Mode' -ForegroundColor Cyan
+                #$Global:Directories = ( Get-ChildItem -Directory ).FullName
+
                 Start-3
 
                 $GoAhead = Read-Host "`nClean up any lossy files now. Type 'Yes' continue to the RAW file cleanup or [Enter] to skip this step."
@@ -235,6 +245,10 @@ function Go-P {
                 Start-5
 
                 $Global:ProcessSubfolders = $InitialFolderMode
+            }
+            '0' {
+                Start-0
+                Read-Host "`nPress Enter to continue"
             }
             '1' {
                 Start-1

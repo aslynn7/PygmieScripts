@@ -81,7 +81,12 @@
         'Combine-FrontAndBackScansForImage',
         'Combine-FrontAndBackScans',
         'Convert-VideoToStreamableVersion', 
-        'Convert-Mp4ToMp3'
+        'Convert-Mp4ToMp3',
+        'Convert-RawOrPngToHighResJpg',
+        'Convert-HeicToJpg',
+        'Convert-ImagesToBW',
+        'Resize-RecursiveSmallerizedImage',
+        'Convert-NefToPng'
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
