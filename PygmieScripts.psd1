@@ -29,7 +29,7 @@
     Copyright            = '2025 (c) Green Pygmies. All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description          = 'Peronsal scripts I use for various things.'
+    Description          = 'Personal scripts for photo and video management (Pygmie Studios).'
 
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion    = '5.1'
@@ -69,24 +69,39 @@
 
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
     FunctionsToExport    = @(
+        # Entry point
         'Go-P',
-        'Add-CopyrightAndWatermarkToImage',
-        'Move-ImagesToTimeStampedFolders',
-        'Resize-SmallerizedImage',
-        'Rename-PhotoFiles',
-        'Cleanup-ExtraneousRAWFiles',
-        'Move-RawFilesToSubfolders',
-        'Add-WhiteSpaceToImageBottoms',
-        'Start-NegativeToPositiveConversion',
-        'Combine-FrontAndBackScansForImage',
-        'Combine-FrontAndBackScans',
-        'Convert-VideoToStreamableVersion', 
-        'Convert-Mp4ToMp3',
-        'Convert-RawOrPngToHighResJpg',
-        'Convert-HeicToJpg',
-        'Convert-ImagesToBW',
-        'Resize-RecursiveSmallerizedImage',
-        'Convert-NefToPng'
+
+        # Images
+        'Add-psCopyrightAndWatermarkToImage',
+        'Compress-psImage',
+        'Compress-psImageTree',
+        'Convert-psHeicToJpg',
+        'Convert-psImagesToBW',
+        'Convert-psNegativeImage',
+        'Convert-psNefToPng',
+        'Convert-psRawOrPngToHighResJpg',
+        'Expand-psImageCanvas',
+        'Export-psContactSheet',
+        'Invoke-psImageFlip',
+        'Merge-psScanPair',
+        'Merge-psScanPairForImage',
+
+        # Organize
+        'Backup-psExifData',
+        'Move-psImagesByDate',
+        'Move-psRawFilesToSubfolders',
+        'Remove-psOrphanRawFiles',
+        'Rename-psPhotoFiles',
+        'Rename-psPhotoFilesByExif',
+
+        # Sync
+        'Sync-psFolder',
+
+        # Video
+        'Convert-psMp4ToMp3',
+        'Convert-psVideoToGif',
+        'Convert-psVideoToStreamableVersion'
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -138,4 +153,3 @@
     # DefaultCommandPrefix = ''
 
 }
-

@@ -21,6 +21,12 @@
       "Trademark": "The Green Pygmies™ is a registered trademark.",
       "Watermark": "Copyright © {YEAR} The Green Pygmies\nAll rights reserved",
       "Author": "Aslynn Meyers"
+    },
+    "The Gonzalez Gang": {
+      "Copyright": "Copyright © {YEAR} The Gonzalez Gang.",
+      "Trademark": "The Gonzalez Gang™ is a registered trademark.",
+      "Watermark": "Copyright © {YEAR} The Gonzalez Gang\nAll rights reserved",
+      "Author": "The Gonzalez Gang"
     }
   }
 }

@@ -1,201 +1,356 @@
 function Show-PygmieMenu {
+    $bar = '═' * 62
+
     Write-Host ''
-    Write-Host '===================================' -ForegroundColor White
-    Write-Host '        Pygmie Studios Menu       ' -ForegroundColor White
+    Write-Host "  $bar" -ForegroundColor White
+    Write-Host '        P Y G M I E   S T U D I O S   T O O L K I T' -ForegroundColor Cyan
+    Write-Host "  $bar" -ForegroundColor White
     Write-Host ''
-    if ( $Global:ProcessSubfolders ) {
-        Write-Host '          (Subfolder Mode)          ' -ForegroundColor Green
-    }
-    else {
-        Write-Host '        (Non Subfolder Mode)          ' -ForegroundColor Red
-    }
+
+    $modeColor = if ($Global:ProcessSubfolders) { 'Green' } else { 'Yellow' }
+    $modeLabel = if ($Global:ProcessSubfolders) { 'SUBFOLDER — processing all subdirectories' } else { 'CURRENT FOLDER only' }
+    Write-Host "  Mode : $modeLabel" -ForegroundColor $modeColor
     Write-Host ''
-    Write-Host " PWD = $PWD" -ForegroundColor Cyan
-    if ( $Global:LastCommandResults ) {
+    Write-Host '  ┌─────────────────────────────────────────────────────────────┐' -ForegroundColor DarkCyan
+    Write-Host "  │  PWD: $($PWD.ToString().PadRight(58))│" -ForegroundColor Cyan
+    Write-Host '  └─────────────────────────────────────────────────────────────┘' -ForegroundColor DarkCyan
+
+    if ($Global:LastCommandResults) {
         Write-Host ''
-        Write-Host " Last Command Results: $Global:LastCommandResults" -ForegroundColor Green
-        Write-Host ''
+        Write-Host "  Last : $Global:LastCommandResults" -ForegroundColor DarkGray
     }
-    Write-Host '===================================' -ForegroundColor White
-    Write-Host '  0. Convert RAW/PNG/BMP to High-Res JPG' -ForegroundColor White
-    Write-Host '  1. Move images to date/time stamped folders' -ForegroundColor White
-    Write-Host '  2. Rename Files' -ForegroundColor White
-    Write-Host '  3. Move RAW files to Subfolders' -ForegroundColor White
-    Write-Host '  4. Cleanup Extraneous RAW/NEF Files' -ForegroundColor White
-    Write-Host '  5. Resize, Copyright, and Watermark Files' -ForegroundColor White
-    Write-Host '  6. Add White Space to Bottoms of Images' -ForegroundColor White
-    Write-Host '  7. Start Negative to Positive Conversion' -ForegroundColor White
-    Write-Host '  8. Combine Front and Back Scans' -ForegroundColor White
+
     Write-Host ''
-    Write-Host '  9. Smallerize .mp4 file' -ForegroundColor White
-    Write-Host ' 10. Convert MP4 file to MP3 file' -ForegroundColor White
+    Write-Host "  $bar" -ForegroundColor White
+    Write-Host '  PHOTO TOOLS' -ForegroundColor White
+    Write-Host "  $bar" -ForegroundColor DarkGray
+    Write-Host '   0  Convert RAW/PNG/TIFF to High-Res JPG' -ForegroundColor White
+    Write-Host '   1  Move images to date-stamped folders' -ForegroundColor White
+    Write-Host '   2  Rename photo files (sequential)' -ForegroundColor White
+    Write-Host '   3  Move RAW files to RAW subfolder' -ForegroundColor White
+    Write-Host '   4  Remove orphaned RAW files               [DELETES FILES]' -ForegroundColor Red
+    Write-Host '   5  Compress, Watermark & Copyright images' -ForegroundColor White
+    Write-Host '   6  Expand canvas (add white space below)   [MODIFIES IN-PLACE]' -ForegroundColor Red
+    Write-Host '   7  Convert negatives to positives' -ForegroundColor White
+    Write-Host '   8  Combine front & back scan pairs' -ForegroundColor White
     Write-Host ''
-    Write-Host '  S. Switch between Current Folder and Subfolder Mode' -ForegroundColor White
+    Write-Host '  SPECIALIZED PHOTO TOOLS' -ForegroundColor White
+    Write-Host "  $bar" -ForegroundColor DarkGray
+    Write-Host '  11  Flip/mirror photos horizontally' -ForegroundColor White
+    Write-Host '  12  Convert HEIC files to JPG' -ForegroundColor White
+    Write-Host '  13  Convert color images to Black & White' -ForegroundColor White
+    Write-Host '  14  Compress image tree (recursive, flat output)' -ForegroundColor White
+    Write-Host '  15  Convert NEF files to PNG' -ForegroundColor White
+    Write-Host '  16  Export contact sheet (thumbnail grid)' -ForegroundColor White
+    Write-Host '  17  Backup EXIF metadata to JSON' -ForegroundColor White
+    Write-Host '  18  Rename photos by EXIF date/time' -ForegroundColor White
     Write-Host ''
-    Write-Host 'All = Run All Steps I normally Run (2, 0, 3, [4], then 5)' -ForegroundColor White
+    Write-Host '  VIDEO TOOLS' -ForegroundColor White
+    Write-Host "  $bar" -ForegroundColor DarkGray
+    Write-Host '   9  Optimize MP4 for streaming' -ForegroundColor White
+    Write-Host '  10  Extract MP3 audio from MP4' -ForegroundColor White
+    Write-Host '  19  Convert video to animated GIF' -ForegroundColor White
     Write-Host ''
-    Write-Host ' Q/[Enter] = Quit' -ForegroundColor White
-    Write-Host '===================================' -ForegroundColor White
+    Write-Host "  $bar" -ForegroundColor White
+    Write-Host '   S  Toggle subfolder mode' -ForegroundColor DarkGray
+    Write-Host '   C  Change working directory' -ForegroundColor DarkGray
+    Write-Host ' All  Run standard workflow: 2 → 0 → 3 → [4] → 5' -ForegroundColor DarkGray
+    Write-Host '   Q  Quit' -ForegroundColor DarkGray
+    Write-Host "  $bar" -ForegroundColor White
+    Write-Host ''
 }
 
 function Start-0 {
-    # Move images to date/time stamped folders
-    foreach ( $Dir in $Global:Directories ) {
-        $Results = Convert-RawOrPngToHighResJpg -InputFolder $Dir
+    foreach ($Dir in $Global:Directories) {
+        $Results = Convert-psRawOrPngToHighResJpg -InputFolder $Dir
     }
-
-    $Global:LastCommandResults = "Converted RAW files to high res JPG files = $Results"
+    $Global:LastCommandResults = "RAW/PNG to High-Res JPG = $Results"
+    return $Results
 }
 
 function Start-1 {
-    # Move images to date/time stamped folders
-    foreach ( $Dir in $Global:Directories ) {
-        $Results = Move-ImagesToTimeStampedFolders -InputFolder $Dir
+    foreach ($Dir in $Global:Directories) {
+        $Results = Move-psImagesByDate -InputFolder $Dir
     }
-
-    $Global:LastCommandResults = "Moved images to date/time stamped folders = $Results"
+    $Global:LastCommandResults = "Move to date folders = $Results"
+    return $Results
 }
 
 function Start-2 {
-    # Rename Files
     Write-Host ''
-    $UseFolderNamePrefixing = Read-Host 'User folder names as file prefixes? (Y/N [Enter]=Y)'
+    $UseFolderNamePrefixing = Read-Host '  Use folder names as file prefixes? (Y/N  [Enter]=Y)'
 
-    if ( $UseFolderNamePrefixing -eq 'n' ) {
+    $FilenamePrefix = ''
+    if ($UseFolderNamePrefixing -eq 'n') {
         Write-Host ''
-        $FilenamePrefix = Read-Host 'Enter a filename prefix to use ([Enter] = "Photo-")'
+        $FilenamePrefix = Read-Host '  Enter a filename prefix ([Enter] = "Photo-")'
     }
 
     Write-Host ''
 
-    foreach ( $Dir in $Global:Directories ) {
-        if ( $UseFolderNamePrefixing -eq 'n' ) {
-            if ( [System.String]::IsNullOrEmpty( $FilenamePrefix ) ) {
-                $Results = Rename-PhotoFiles -InputFolder $Dir
+    $Results = $true
+    foreach ($Dir in $Global:Directories) {
+        if ($UseFolderNamePrefixing -eq 'n') {
+            if ([System.String]::IsNullOrEmpty($FilenamePrefix)) {
+                $Results = Rename-psPhotoFiles -InputFolder $Dir
             }
             else {
-                $Results = Rename-PhotoFiles -InputFolder $Dir -FilenamePrefix $FilenamePrefix
+                $Results = Rename-psPhotoFiles -InputFolder $Dir -FilenamePrefix $FilenamePrefix
             }
         }
         else {
-            $Results = Rename-PhotoFiles -InputFolder $Dir -UseFolderNamePrefixing
+            $Results = Rename-psPhotoFiles -InputFolder $Dir -UseFolderNamePrefixing
         }
     }
 
-    $Global:LastCommandResults = "Renamed Files = $Results"
+    $Global:LastCommandResults = "Rename files = $Results"
+    return $Results
 }
+
 function Start-3 {
-    # Move Raws files to Subfolders
-    foreach ( $Dir in $Global:Directories ) {
-        $Results = Move-RawFilesToSubfolders -InputFolder $Dir
+    foreach ($Dir in $Global:Directories) {
+        $Results = Move-psRawFilesToSubfolders -InputFolder $Dir
     }
-
-    $Global:LastCommandResults = "Moved RAW files to subfolders = $Results"
+    $Global:LastCommandResults = "Move RAW to subfolder = $Results"
+    return $Results
 }
+
 function Start-4 {
-    # Cleanup Extraneous RAW/NEF Files
-    # GROK NEED TO TEST THE FUNCTIONALITY OF THIS CALL - PROBABLY NEED TO UPDATE TO MATCH ANY LOSSY FILE OF ANY TYPE JUST TO BE F'N SAFE
-    foreach ( $Dir in $Global:Directories ) {
-        $Results = Cleanup-ExtraneousRAWFiles -InputFolder $Dir
+    foreach ($Dir in $Global:Directories) {
+        $Results = Remove-psOrphanRawFiles -InputFolder $Dir
     }
-
-    $Global:LastCommandResults = "Cleaned Extranous RAW files = $Results"
+    $Global:LastCommandResults = "Remove orphan RAW files = $Results"
+    return $Results
 }
-function Start-5 {
-    # Resize, Copyright, and Watermark Files
-    # GROK - EVERYTHING WORK BUT RETURN CODE ISN"T A BOOLEAN
 
+function Start-5 {
     Write-Host ''
-    Write-Host 'Pick your Copyright and Watermark option'
+    Write-Host '  Pick your Copyright / Watermark profile:' -ForegroundColor Cyan
     Write-Host ''
 
     $PossibilityCount = $Global:PygmieScriptsConfig.Attribution.psObject.Properties.Name.Count
+    $AdHocOption      = $PossibilityCount + 1
+
     do {
         $Index = 0
         foreach ($Possibility in $Global:PygmieScriptsConfig.Attribution.psObject.Properties.Name) {
             $Index++
-            Write-Host "$($Index): $Possibility"
+            Write-Host "  $($Index): $Possibility"
         }
+        Write-Host "  $($AdHocOption): [Ad Hoc / Custom Entry]"
         Write-Host ''
-        $Option = Read-Host 'Choose your destiny (Q to quit)'
-    } while ( (-not [int]::TryParse($Option, [ref]$null) -or [int]$Option -lt 1 -or [int]$Option -gt $PossibilityCount) -and $Option -ne 'Q')
+        $Option = Read-Host '  Choose your destiny (Q to quit)'
+    } while ((-not [int]::TryParse($Option, [ref]$null) -or [int]$Option -lt 1 -or [int]$Option -gt $AdHocOption) -and $Option -ne 'Q')
 
-    if ( $Option -ne 'Q') {
-        $Option = $Global:PygmieScriptsConfig.Attribution.psObject.Properties.Name[$Option - 1]
-        $Copyright = ($Global:PygmieScriptsConfig.Attribution.$Option.Copyright).Replace( '{YEAR}', (Get-Date).Year )
-        $Trademark = ($Global:PygmieScriptsConfig.Attribution.$Option.Trademark).Replace( '{YEAR}', (Get-Date).Year )
-        $Watermark = ($Global:PygmieScriptsConfig.Attribution.$Option.Watermark).Replace( '{YEAR}', (Get-Date).Year )
-        $Author = $Global:PygmieScriptsConfig.Attribution.$Option.Author
+    if ($Option -ne 'Q') {
+        if ([int]$Option -eq $AdHocOption) {
+            Write-Host ''
+            $Copyright = Read-Host '  Enter Copyright text'
+            $Watermark = Read-Host '  Enter Watermark text'
+            $Author    = Read-Host '  Enter Author name'
+            $Comment   = Read-Host '  Enter Comment (or [Enter] to skip)'
+        }
+        else {
+            $OptionName = $Global:PygmieScriptsConfig.Attribution.psObject.Properties.Name[$Option - 1]
+            $Copyright  = ($Global:PygmieScriptsConfig.Attribution.$OptionName.Copyright).Replace('{YEAR}', (Get-Date).Year)
+            $Watermark  = ($Global:PygmieScriptsConfig.Attribution.$OptionName.Watermark).Replace('{YEAR}', (Get-Date).Year)
+            $Author     = $Global:PygmieScriptsConfig.Attribution.$OptionName.Author
+            $Comment    = Read-Host '  Enter Comment (or [Enter] to skip)'
+        }
 
         Write-Host ''
-        Write-Host "Setting Copyright to: $Copyright"
-        Write-Host "Setting Trademark to: $Trademark"
-        Write-Host "Setting Watermark to: $Watermark"
-        Write-Host "   Setting Author to: $Author"
-
+        Write-Host "  Copyright : $Copyright"
+        Write-Host "  Watermark : $Watermark"
+        Write-Host "  Author    : $Author"
+        Write-Host "  Comment   : $Comment"
         Write-Host ''
 
         $Results = $true
-        foreach ( $Dir in $Global:Directories ) {
-            $Results = $Results -band (Resize-SmallerizedImage -InputFolder $Dir)
-
+        foreach ($Dir in $Global:Directories) {
+            $Results = $Results -band (Compress-psImage -InputFolder $Dir)
             $SmallerizedFolder = Join-Path -Path $Dir -ChildPath 'Smallerized'
-            $WaterMarkedAndCopyrightedFolder = Join-Path -Path $Dir -ChildPath 'WatermarkedAndCopyrighted'
-            $Results = $Results -band (Add-CopyrightAndWatermarkToImage -InputFolder $SmallerizedFolder -OutputFolder $WaterMarkedAndCopyrightedFolder -Watermark $Watermark -Copyright $Copyright -Author $Author)
+            $WatermarkedFolder = Join-Path -Path $Dir -ChildPath 'WatermarkedAndCopyrighted'
+            $Results = $Results -band (Add-psCopyrightAndWatermarkToImage -InputFolder $SmallerizedFolder -OutputFolder $WatermarkedFolder -Watermark $Watermark -Copyright $Copyright -Author $Author -Comment $Comment)
         }
 
-        $Global:LastCommandResults = "Resized, copyrighted, and watermarked files = $Results"
+        $Global:LastCommandResults = "Compress + Watermark + Copyright = $Results"
+        return $Results
     }
+    return $false
 }
+
 function Start-6 {
-    # Add White Space to Bottoms of Images
-    foreach ( $Dir in $Global:Directories ) {
-        $Results = Add-WhiteSpaceToImageBottoms -InputFolder $Dir
+    foreach ($Dir in $Global:Directories) {
+        $Results = Expand-psImageCanvas -InputFolder $Dir
     }
-
-    $Global:LastCommandResults = "Added white space to bottoms of images = $Results"
+    $Global:LastCommandResults = "Expand canvas = $Results"
+    return $Results
 }
+
 function Start-7 {
-    # Start Negative to Positive Conversion
-
     Write-Host ''
-    $ColorOrBW = Read-Host 'Are the negatives Color or Grayscale? (C/G)'
+    $ColorOrBW = Read-Host '  Are the negatives Color or Grayscale? (C/G)'
 
-    if ( $ColorOrBW -eq 'G' ) {
+    if ($ColorOrBW -eq 'G') {
         $ColorSpace = 'Gray'
     }
-    elseif ( $ColorOrBW -eq 'C' ) {
+    elseif ($ColorOrBW -eq 'C') {
         $ColorSpace = 'RGB'
     }
     else {
-        Write-Host ''
-        Write-Host 'Invalid option selected. Exiting to menu.' -ForegroundColor Red
-        Start-Sleep -Seconds 2
-        continue
+        Write-Host '  Invalid option. Returning to menu.' -ForegroundColor Red
+        return $false
     }
 
-    if ( $ColorSpace -eq 'Gray' -or $ColorSpace -eq 'RGB' ) {
-        foreach ( $Dir in $Global:Directories ) {
-            $Results = Start-NegativeToPositiveConversion -InputFolder $Dir -ColorSpace $ColorSpace
-        }
-
-        $Global:LastCommandResults = "Negative to Positive conversions = $Results"
+    $Results = $true
+    foreach ($Dir in $Global:Directories) {
+        $Results = Convert-psNegativeImage -InputFolder $Dir -ColorSpace $ColorSpace
     }
+
+    $Global:LastCommandResults = "Negative to positive = $Results"
+    return $Results
 }
 
 function Start-8 {
-    # Combine Front and Back Scans
-    # THIS CODE TOTALLY NEEDS TO TLC FACE LIFT AND CURRENTLY DOESNT RETURN A VALID RETURN CODE
-    foreach ( $Dir in $Global:Directories ) {
-        $Results = Combine-FrontAndBackScans -InputFolder $Dir
+    foreach ($Dir in $Global:Directories) {
+        $Results = Merge-psScanPair -InputFolder $Dir
     }
+    $Global:LastCommandResults = "Combine scan pairs = $Results"
+    return $Results
+}
 
-    $Global:LastCommandResults = "Cleaned Extranous RAW files = $Results"
+function Start-9 {
+    Write-Host ''
+    $InputFile  = Read-Host '  Enter the fully qualified path to the input MP4 file'
+    $OutputFile = Read-Host '  Enter the output file path ([Enter] for auto-generated name)'
+
+    if ([System.String]::IsNullOrEmpty($OutputFile)) {
+        $Results = Convert-psVideoToStreamableVersion -InputFile $InputFile
+    }
+    else {
+        $Results = Convert-psVideoToStreamableVersion -InputFile $InputFile -OutputFile $OutputFile
+    }
+    $Global:LastCommandResults = "Optimize video = $Results"
+    return $Results
 }
 
 function Start-10 {
-    # Convert MP4 file to MP3 file
-    $Result = Convert-Mp4ToMp3
+    $Results = Convert-psMp4ToMp3
+    $Global:LastCommandResults = "MP4 to MP3 = $Results"
+    return $Results
+}
+
+function Start-11 {
+    foreach ($Dir in $Global:Directories) {
+        $Results = Invoke-psImageFlip -InputFolder $Dir
+    }
+    $Global:LastCommandResults = "Flip/mirror images = $Results"
+    return $Results
+}
+
+function Start-12 {
+    foreach ($Dir in $Global:Directories) {
+        $Results = Convert-psHeicToJpg -InputFolder $Dir
+    }
+    $Global:LastCommandResults = "HEIC to JPG = $Results"
+    return $Results
+}
+
+function Start-13 {
+    foreach ($Dir in $Global:Directories) {
+        $Results = Convert-psImagesToBW -InputFolder $Dir
+    }
+    $Global:LastCommandResults = "Color to B&W = $Results"
+    return $Results
+}
+
+function Start-14 {
+    Write-Host ''
+    $InputFolder  = Read-Host '  Enter the source folder to scan recursively'
+    $OutputFolder = Read-Host '  Enter the output folder for compressed files'
+
+    $Results = Compress-psImageTree -InputFolder $InputFolder -OutputFolder $OutputFolder
+    $Global:LastCommandResults = "Compress image tree = $Results"
+    return $Results
+}
+
+function Start-15 {
+    foreach ($Dir in $Global:Directories) {
+        $Results = Convert-psNefToPng -SourceFolder $Dir
+    }
+    $Global:LastCommandResults = "NEF to PNG = $Results"
+    return $Results
+}
+
+function Start-16 {
+    foreach ($Dir in $Global:Directories) {
+        $Results = Export-psContactSheet -InputFolder $Dir
+    }
+    $Global:LastCommandResults = "Export contact sheet = $Results"
+    return $Results
+}
+
+function Start-17 {
+    foreach ($Dir in $Global:Directories) {
+        $Results = Backup-psExifData -InputFolder $Dir
+    }
+    $Global:LastCommandResults = "Backup EXIF data = $Results"
+    return $Results
+}
+
+function Start-18 {
+    Write-Host ''
+    $WhatIf = Read-Host '  Preview renames without applying? (Y/N  [Enter]=N)'
+
+    foreach ($Dir in $Global:Directories) {
+        if ($WhatIf -eq 'Y' -or $WhatIf -eq 'y') {
+            $Results = Rename-psPhotoFilesByExif -InputFolder $Dir -WhatIf
+        }
+        else {
+            $Results = Rename-psPhotoFilesByExif -InputFolder $Dir
+        }
+    }
+    $Global:LastCommandResults = "Rename by EXIF = $Results"
+    return $Results
+}
+
+function Start-19 {
+    Write-Host ''
+    $InputFile  = Read-Host '  Enter the fully qualified path to the input video file'
+    $OutputFile = Read-Host '  Enter the output GIF path ([Enter] for auto-generated name)'
+    Write-Host ''
+    $FpsInput   = Read-Host '  Frame rate fps ([Enter] = 10)'
+    $WidthInput = Read-Host '  Output width px ([Enter] = 640)'
+
+    $Fps   = if ([int]::TryParse($FpsInput,   [ref]$null)) { [int]$FpsInput   } else { 10  }
+    $Width = if ([int]::TryParse($WidthInput, [ref]$null)) { [int]$WidthInput } else { 640 }
+
+    $Params = @{ InputFile = $InputFile; Fps = $Fps; Width = $Width }
+    if (-not [System.String]::IsNullOrEmpty($OutputFile)) { $Params.OutputFile = $OutputFile }
+
+    $Results = Convert-psVideoToGif @Params
+    $Global:LastCommandResults = "Video to GIF = $Results"
+    return $Results
+}
+
+function Show-AllWorkflowSummary {
+    param([hashtable] $StepResults)
+
+    $bar = '─' * 40
+    Write-Host ''
+    Write-Host "  $bar" -ForegroundColor White
+    Write-Host '  ALL WORKFLOW SUMMARY' -ForegroundColor White
+    Write-Host "  $bar" -ForegroundColor DarkGray
+
+    foreach ($Step in $StepResults.Keys) {
+        $val   = $StepResults[$Step]
+        $color = if ($val -eq $true) { 'Green' } elseif ($val -eq $false) { 'Red' } else { 'Yellow' }
+        $label = if ($val -eq $true) { 'PASS' } elseif ($val -eq $false) { 'FAIL' } else { 'SKIP' }
+        Write-Host "  $($Step.PadRight(30)) $label" -ForegroundColor $color
+    }
+
+    Write-Host "  $bar" -ForegroundColor White
+    Write-Host ''
 }
 
 function Go-P {
@@ -204,115 +359,89 @@ function Go-P {
 
         Show-PygmieMenu
 
-        $DoSomething = Read-Host 'Select an option (0, 1, 2, 3, 4, 5, 6, 7, 8, All, S or Q)'
+        $DoSomething = Read-Host '  Select an option (0-19, S, C, All, Q)'
 
-        if ( $Global:ProcessSubfolders ) {
-            $Global:Directories = ( Get-ChildItem -Directory ).FullName
+        if ($Global:ProcessSubfolders) {
+            $Global:Directories = (Get-ChildItem -Directory -Recurse).FullName
         }
         else {
-            $Global:Directories = @( $PWD )
+            $Global:Directories = @($PWD)
         }
 
-        switch ( $DoSomething ) {
+        switch ($DoSomething) {
             'All' {
-                # GROK - DO WE ALWAYS WANT TO SORT FILES TO DATE?  CASES WHERE WE DON'T?  AND HOW TO HANDLE THAT?  ALL VS. SOMETHING ELSE?
-                # MAYBE WE ASK A FEW QUESTIONS
-                # - DO YOU WANT TO SORT FILES INTO DATE FOLDERS? (Y/N)
-                # - DO YOU WANT TO WORK ON SUBFOLDERS? (Y/N)
-                # - THEN DO THE THING
-
-                $InitialFolderMode = $Global:ProcessSubfolders
-
+                $InitialFolderMode        = $Global:ProcessSubfolders
                 $Global:ProcessSubfolders = $False
-                Write-Host 'Switched to Current Folder Mode' -ForegroundColor Cyan
-                $Global:Directories = @( $PWD )
+                $Global:Directories       = @($PWD)
+                Write-Host '  Running standard workflow in Current Folder Mode.' -ForegroundColor Cyan
+                Write-Host ''
 
-                Start-2
-                Start-0
+                $StepResults = [ordered]@{}
 
-                #$Global:ProcessSubfolders = $True
-                #Write-Host 'Switched to Subfolder Mode' -ForegroundColor Cyan
-                #$Global:Directories = ( Get-ChildItem -Directory ).FullName
+                $StepResults['2. Rename files']    = Start-2
+                $StepResults['0. RAW to JPG']      = Start-0
+                $StepResults['3. Move RAW to sub'] = Start-3
 
-                Start-3
-
-                $GoAhead = Read-Host "`nClean up any lossy files now. Type 'Yes' continue to the RAW file cleanup or [Enter] to skip this step."
-
-                if ( $GoAhead -eq 'Yes' ) {
-                    Start-4
+                $GoAhead = Read-Host "`n  Cull any lossy files now. Type 'Yes' to run orphan RAW cleanup, or [Enter] to skip."
+                if ($GoAhead -eq 'Yes') {
+                    $StepResults['4. Remove orphan RAW'] = Start-4
+                }
+                else {
+                    $StepResults['4. Remove orphan RAW'] = 'skipped'
                 }
 
-                Start-5
+                $StepResults['5. Compress+Watermark'] = Start-5
 
+                Show-AllWorkflowSummary -StepResults $StepResults
                 $Global:ProcessSubfolders = $InitialFolderMode
             }
-            '0' {
-                Start-0
-                Read-Host "`nPress Enter to continue"
-            }
-            '1' {
-                Start-1
-                Read-Host "`nPress Enter to continue"
-            }
-            '2' {
-                Start-2
-                Read-Host "`nPress Enter to continue"
-            }
-            '3' {
-                Start-3
-                Read-Host "`nPress Enter to continue"
-            }
-            '4' {
-                Start-4
-                Read-Host "`nPress Enter to continue"
-            }
-            '5' {
-                Start-5
-                Read-Host "`nPress Enter to continue"
-            }
-            '6' {
-                Start-6
-                Read-Host "`nPress Enter to continue"
-            }
-            '7' {
-                Start-7
-                Read-Host "`nPress Enter to continue"
-            }
-            '8' {
-                Start-8
-                Read-Host "`nPress Enter to continue"
-            }
-            '9' {
-                $InputFile = Read-Host 'Enter the Fully Qualified Path of the input file'
-                $OutputFile = Read-Host 'Enter the Fully Qualified Path of the Output File ([Enter] for defaults)'
-                
-                Convert-VideoToStreamableVersion -InputFile $InputFile -OutputFile $OutputFile 
-            }
-            '10' {
-                Start-10
-                Read-Host "`nPress Enter to continue"
-            }
-            'S' {
-                if ( $Global:ProcessSubfolders ) {
+            '0'  { Start-0;  Read-Host "`n  Press Enter to continue" }
+            '1'  { Start-1;  Read-Host "`n  Press Enter to continue" }
+            '2'  { Start-2;  Read-Host "`n  Press Enter to continue" }
+            '3'  { Start-3;  Read-Host "`n  Press Enter to continue" }
+            '4'  { Start-4;  Read-Host "`n  Press Enter to continue" }
+            '5'  { Start-5;  Read-Host "`n  Press Enter to continue" }
+            '6'  { Start-6;  Read-Host "`n  Press Enter to continue" }
+            '7'  { Start-7;  Read-Host "`n  Press Enter to continue" }
+            '8'  { Start-8;  Read-Host "`n  Press Enter to continue" }
+            '9'  { Start-9;  Read-Host "`n  Press Enter to continue" }
+            '10' { Start-10; Read-Host "`n  Press Enter to continue" }
+            '11' { Start-11; Read-Host "`n  Press Enter to continue" }
+            '12' { Start-12; Read-Host "`n  Press Enter to continue" }
+            '13' { Start-13; Read-Host "`n  Press Enter to continue" }
+            '14' { Start-14; Read-Host "`n  Press Enter to continue" }
+            '15' { Start-15; Read-Host "`n  Press Enter to continue" }
+            '16' { Start-16; Read-Host "`n  Press Enter to continue" }
+            '17' { Start-17; Read-Host "`n  Press Enter to continue" }
+            '18' { Start-18; Read-Host "`n  Press Enter to continue" }
+            '19' { Start-19; Read-Host "`n  Press Enter to continue" }
+            'S'  {
+                if ($Global:ProcessSubfolders) {
                     $Global:ProcessSubfolders = $false
-                    Write-Host 'Switched to Current Folder Mode' -ForegroundColor Cyan
+                    Write-Host '  Switched to Current Folder Mode.' -ForegroundColor Yellow
                 }
                 else {
                     $Global:ProcessSubfolders = $true
-                    Write-Host 'Switched to Subfolder Mode' -ForegroundColor Cyan
+                    Write-Host '  Switched to Subfolder Mode.' -ForegroundColor Green
                 }
             }
-            'Q' {
-                Write-Host 'Exiting the menu. Goodbye!' -ForegroundColor Yellow
+            'C'  {
+                Write-Host ''
+                Write-Host "  Current directory: $PWD" -ForegroundColor DarkGray
+                $NewPath = Read-Host '  Enter new working directory path'
+                if (-not [System.String]::IsNullOrEmpty($NewPath)) {
+                    if (Test-Path -LiteralPath $NewPath -PathType Container) {
+                        Set-Location -LiteralPath $NewPath
+                        Write-Host "  Changed to: $PWD" -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "  Path not found: $NewPath" -ForegroundColor Red
+                    }
+                }
             }
-            default {
-                Write-Host 'Exiting the menu. Goodbye!' -ForegroundColor Yellow
-            }
+            'Q'  { Write-Host '  Goodbye!' -ForegroundColor Yellow }
+            default { Write-Host '  Goodbye!' -ForegroundColor Yellow }
         }
 
-        # if ( $DoSomething -ne 'Q' -and $DoSomething -ne 'S' -and -not [System.String]::IsNullOrEmpty( $DoSomething ) ) {
-        #     Start-Sleep -Seconds 7
-        # }
-
-    } while ($DoSomething -ne 'Q' -and -not [System.String]::IsNullOrEmpty( $DoSomething ))
+    } while ($DoSomething -ne 'Q' -and -not [System.String]::IsNullOrEmpty($DoSomething))
 }
